@@ -17,4 +17,10 @@ migratedown:
 sqlc:
 	sqlc generate
 
-.phony: createdb postgres dropdb migrateup migratedown sqlc
+test:
+	go test -count=1 -timeout 30s -v -cover ./...
+
+psql:
+	doker exec -it simple_bank_db psql -U root -d simple_bank
+
+.phony: createdb postgres dropdb migrateup migratedown sqlc test psql
