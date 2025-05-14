@@ -1,7 +1,3 @@
-# This workflow will build a golang project
-
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
-
 name: ci-test
 
 on:
@@ -15,18 +11,13 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
-    # Service containers to run with `container-job`
     services:
-      # Label used to access the service container
       postgres:
-        # Docker Hub image
         image: postgres:latest
-        # Provide the password for postgres
         env:
           POSTGRES_PASSWORD: 12345
           POSTGRES_USER: root
           POSTGRES_DB: simple_bank
-        # Set health checks to wait until postgres has started
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -40,17 +31,16 @@ jobs:
           go-version: ^1.24.2
         id: go
 
-      - name: Check out code into the Go module directly
+      - name: Check out code
         uses: actions/checkout@v4
 
-      - name: install golang migrate cli command
+      - name: Install golang-migrate CLI
         run: |
-          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.18.3/migrate.darwin-amd64.tar.gz | tar xvz
-          sudo mv migrate /usr/bin/
-          which migrate
+          go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@v4.18.3
+          echo "${HOME}/go/bin" >> $GITHUB_PATH
 
-      - name: Run db migration using migrate command
+      - name: Run DB migration
         run: make migrateup
 
-      - name: Run test suite
+      - name: Run tests
         run: make test
