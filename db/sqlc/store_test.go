@@ -123,3 +123,56 @@ func TestTransferTx(t *testing.T) {
 	require.Equal(t, account1.Balance-(int64(n)*int64(amount)), updatedAccount1.Balance)
 	require.Equal(t, account2.Balance+(int64(n)*int64(amount)), updatedAccount2.Balance)
 }
+
+func TestTransferTxDeadlock(t *testing.T) {
+	store := NewStore(testDB)
+
+	account1 := createRandomAccount(t)
+	account2 := createRandomAccount(t)
+
+	n := 10
+	amount := int64(10)
+
+	//? channels to retrieve the errors from separate goroutines into the main thread
+	errors := make(chan error)
+
+	//? run n concurrent transfer transactions
+	for i := range n {
+
+		fromAccountId := account1.ID
+		toAccountId := account2.ID
+
+		//! we want half the transactions to run reverse money transfer
+		if i%2 == 1 {
+			fromAccountId = account2.ID
+			toAccountId = account1.ID
+		}
+
+		go func() {
+			_, err := store.TransferTx(context.Background(), TransferTxParams{
+				FromAccountID: fromAccountId,
+				ToAccountID:   toAccountId,
+				Amount:        amount,
+			})
+
+			errors <- err
+		}()
+	}
+
+	for range n {
+		err := <-errors
+		require.NoError(t, err)
+
+	}
+
+	//? check the final updated balances
+	updatedAccount1, err := testQueries.GetAccount(context.Background(), account1.ID)
+	require.NoError(t, err)
+	updatedAccount2, err := testQueries.GetAccount(context.Background(), account2.ID)
+	require.NoError(t, err)
+
+	require.Equal(t, account1.Balance, updatedAccount1.Balance)
+	require.Equal(t, account2.Balance, updatedAccount2.Balance)
+}
+
+

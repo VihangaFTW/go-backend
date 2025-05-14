@@ -96,28 +96,58 @@ func (store *Store) TransferTx(ctx context.Context, arg TransferTxParams) (Trans
 			return err
 		}
 
-		//? update account balances
-		result.FromAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-			ID: arg.FromAccountID,
-			//* deduct amount for sender
-			Amount: -arg.Amount,
-		})
-		if err != nil {
-			return err
-		}
+		//! Avoid deadlock : always lock the record with the smaller Primary Key
+		//? sender account has the smaller id so perform update on its row first. Sender;s balance is balance is decremented
+		if arg.FromAccountID < arg.ToAccountID {
 
-		result.ToAccount, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-			ID: arg.ToAccountID,
-			//* increment amount for receiver
-			Amount: arg.Amount,
-		})
+			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.FromAccountID, -arg.Amount, arg.ToAccountID, arg.Amount)
 
-		if err != nil {
-			return err
+			if err != nil {
+				return err
+			}
+			//? receiver account has the smaller id so perform update on its row first. Receiver's balance is incremented
+		} else {
+
+			result.FromAccount, result.ToAccount, err = addMoney(ctx, q, arg.ToAccountID, arg.Amount, arg.FromAccountID, -arg.Amount)
+
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil
 	})
 
 	return result, err
+}
+
+func addMoney(
+	ctx context.Context,
+	q *Queries,
+	accountID1 int64,
+	amount1 int64,
+	accountID2 int64,
+	amount2 int64,
+) (account1 Account, account2 Account, err error) {
+
+	account1, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
+		ID:     accountID1,
+		Amount: amount1,
+	})
+
+	if err != nil {
+		return
+	}
+
+	account2, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
+		ID:     accountID2,
+		Amount: amount2,
+	})
+
+	if err != nil {
+		return
+	}
+
+	return
+
 }
