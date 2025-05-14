@@ -43,7 +43,10 @@ jobs:
       - name: Check out code into the Go module directly
         uses: actions/checkout@v4
 
-      - name: Run db migration
+      - name: install golang migrate cli command
+        run: $ curl -L https://github.com/golang-migrate/migrate/releases/download/$version/migrate.$os-$arch.tar.gz | tar xvz
+
+      - name: Run db migration using migrate command
         run: make migrateup
 
       - name: Run test suite
