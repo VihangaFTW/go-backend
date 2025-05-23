@@ -15,6 +15,7 @@ func main() {
 
 	// load ennvironmental variables (db connection)
 	config, err := util.LoadConfig(".")
+	
 	if err != nil {
 		log.Fatal("cannot load config:", err)
 	}

@@ -12,18 +12,26 @@ type Config struct {
 
 // LoadConfig is responsible for loading the configuration from a file or env variable
 func LoadConfig(path string) (config Config, err error) {
-
+	
+	// tells Viper where to look for config files
 	viper.AddConfigPath(path)
+	// set the config file name to "app"
 	viper.SetConfigName("app")
+	// tells Viper the file format is .env format
 	viper.SetConfigType("env")
 
+	// enables automatic reading of environmental variables.
+	// By using viper.AutomaticEnv(), Viper will look for environment variables that match the keys
+	// defined in the configuration struct (like DB_SOURCE, DB_DRIVER, and SERVER_ADDRESS) and use
+	// those values if they are set.
 	viper.AutomaticEnv()
-
+	
+	// actually reads the config file (app.env)
 	err = viper.ReadInConfig()
 	if err != nil {
 		return
 	}
-
+	// maps the loaded values into Config struct
 	err = viper.Unmarshal(&config)
 	return
 }

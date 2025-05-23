@@ -6,12 +6,16 @@ import (
 	"fmt"
 )
 
-//Store provides all functions to execute db queries and transactions
+// Store provides all functions to execute db queries and transactions
 type Store interface {
-	
+	//! interfaces can only embed other interfaces (no structs or other concrete types)
+	Querier
+	TransferTx(ctx context.Context, arg TransferTxParams) (TransferTxResult, error)
 }
 
-//SQLStore provides all functions to execute SQL queries and transactions.
+// SQLStore provides all functions to execute SQL queries and transactions.
+// SQLStore struct automatically implements Querier because *Queries does
+// + it has TransferTx method, so it implements Store interface
 type SQLStore struct {
 	//? inherit all methods from Queries through embedding
 	*Queries
@@ -19,7 +23,7 @@ type SQLStore struct {
 }
 
 // NewStore creates a new store
-func NewStore(db *sql.DB) *SQLStore {
+func NewStore(db *sql.DB) Store {
 	return &SQLStore{
 		db:      db,
 		Queries: New(db),
