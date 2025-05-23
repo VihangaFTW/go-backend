@@ -23,4 +23,7 @@ test:
 psql:
 	doker exec -it simple_bank_db psql -U root -d simple_bank
 
-.phony: createdb postgres dropdb migrateup migratedown sqlc test psql
+server:
+	go run main.go
+
+.phony: createdb postgres dropdb migrateup migratedown sqlc test psql server
