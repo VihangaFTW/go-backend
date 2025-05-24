@@ -45,7 +45,7 @@ func RandomCurrency() string{
 }
 
 
-// currently 27 account ids from 1-17 in db
+// RandomAccountId generates a random account id from 1 to 27
 func RandomAccountId() int64 {
 	return RandomInt(1, 27)
 }

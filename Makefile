@@ -26,4 +26,7 @@ psql:
 server:
 	go run main.go
 
-.phony: createdb postgres dropdb migrateup migratedown sqlc test psql server
+mock:
+	mockgen -package mockdb -destination db/mock/store.go github.com/VihangaFTW/Go-Backend/db/sqlc Store
+
+.phony: createdb postgres dropdb migrateup migratedown sqlc test psql server mock
