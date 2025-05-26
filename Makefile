@@ -1,5 +1,5 @@
 
-postgres:
+startdb:
 	docker run --name bank_postgres -e POSTGRES_USER=root -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d postgres:latest
 
 createdb:
@@ -29,4 +29,4 @@ server:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/VihangaFTW/Go-Backend/db/sqlc Store
 
-.phony: createdb postgres dropdb migrateup migratedown sqlc test psql server mock
+.phony: createdb startdb dropdb migrateup migratedown sqlc test psql server mock
