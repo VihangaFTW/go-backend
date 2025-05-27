@@ -10,7 +10,7 @@ import (
 
 type createAccountRequest struct {
 	Owner    string `json:"owner" binding:"required"`
-	Currency string `json:"currency" binding:"required,oneof=USD EUR"`
+	Currency string `json:"currency" binding:"required,currency"`
 }
 
 type getAccountRequest struct {
@@ -22,13 +22,7 @@ type listAccountParams struct {
 	PageSize int32 `form:"page_size" binding:"required,min=5,max=10"`
 }
 
-type createTransferRequest struct {
-	FromAccountID int64 `json:"from_account_id" binding:"required,min:1"`
-	ToAccountID   int64 `json:"to_account_id" binding:"required,min:1"`
-	Amount        int64 `json:"amount" binding:"required,gt=0"`
-}
-
-func (server *Server) CreateAccount(ctx *gin.Context) {
+func (server *Server) createAccount(ctx *gin.Context) {
 	var req createAccountRequest
 
 	//* 1. Validate client request fields
@@ -57,7 +51,7 @@ func (server *Server) CreateAccount(ctx *gin.Context) {
 
 }
 
-func (server *Server) GetAccount(ctx *gin.Context) {
+func (server *Server) getAccount(ctx *gin.Context) {
 	var req getAccountRequest
 	// ShouldBindUri pulls param values out of the HTTP request URL path and populates the struct's fields after validation
 	if err := ctx.ShouldBindUri(&req); err != nil {
@@ -81,7 +75,7 @@ func (server *Server) GetAccount(ctx *gin.Context) {
 
 }
 
-func (server *Server) ListAccount(ctx *gin.Context) {
+func (server *Server) listAccount(ctx *gin.Context) {
 	var req listAccountParams
 	// ShouldBindUri pulls param values out of the HTTP request URL path and populates the struct's fields after validation
 	if err := ctx.ShouldBindQuery(&req); err != nil {
@@ -109,33 +103,3 @@ func (server *Server) ListAccount(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, accounts)
 
 }
-
-func (server *Server) CreateTransfer(ctx *gin.Context) {
-	var req createTransferRequest
-
-	// perform validation
-	if err := ctx.ShouldBindJSON(&req); err != nil {
-		ctx.JSON(http.StatusBadRequest, errorResponse(err))
-		return
-	}
-
-	arg := db.TransferTxParams{
-		FromAccountID: req.FromAccountID,
-		ToAccountID:   req.ToAccountID,
-		Amount:        req.Amount,
-	}
-
-	// create transfer in backend
-	results, err := server.store.TransferTx(ctx, arg)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			ctx.JSON(http.StatusNotFound, errorResponse(err))
-			return
-		}
-		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
-		return
-	}
-
-	ctx.JSON(http.StatusOK, results)
-}
-
