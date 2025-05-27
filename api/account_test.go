@@ -19,7 +19,7 @@ import (
 
 func TestGetAccountAPI(t *testing.T) {
 
-	//? Flow:
+	//?    Flow:
 	//? 1. create a fake account.
 	//? 2. configure fake db to send the appropriate response back when the api endpoint is called with the account id as parameter (setup an "expectation")
 	//? 3. start the server and send the get request for the account

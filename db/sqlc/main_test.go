@@ -12,6 +12,7 @@ import (
 
 // ? package level variable can be accessed by any file in package db
 // memory address pointer definition
+
 var testQueries *Queries
 var testDB *sql.DB
 
