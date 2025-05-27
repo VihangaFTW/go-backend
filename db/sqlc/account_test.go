@@ -10,9 +10,12 @@ import (
 )
 
 func createRandomAccount(t *testing.T) Account {
+	//* handle owner_account foregin key constraint after adding users table
+	user := createRandomUser(t)
+
 	//? test input
 	arg := CreateAccountParams{
-		Owner:    util.RandomOwner(),
+		Owner:    user.Username,
 		Balance:  util.RandomMoney(),
 		Currency: util.RandomCurrency(),
 	}
