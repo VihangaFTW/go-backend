@@ -20,6 +20,8 @@ func NewServer(store db.Store) *Server {
 	router := gin.Default()
 
 	//? setup a custom validation tag used to validate struct fields
+	//! interface{} = any type. Need to cast the interface to check what concrete type it is
+	//* we guess the type here so the type assertion might fail; hence the if condition below for safety
 	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
 		//? usage: fieldname`currency`
 		v.RegisterValidation("currency", validCurrency)
@@ -29,7 +31,7 @@ func NewServer(store db.Store) *Server {
 	router.POST("/accounts", server.createAccount)
 	router.POST("/transfers", server.createTransfer)
 	router.GET("/accounts/:id", server.getAccount)
-	router.GET("/accounts", server.listAccount)
+	router.GET("/accounts", server.listAccount)	
 
 	// add the routes to the router
 	server.router = router
