@@ -15,6 +15,7 @@ import (
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
 	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/gin-gonic/gin"
+	"github.com/lib/pq"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -91,7 +92,7 @@ func TestCreateUserAPI(t *testing.T) {
 
 	// testCase defines the shape of each testcase object
 	type testCase struct {
-		name          string
+		name string
 		//* mocks the shape of the http request payload (as JSON data)
 		body          gin.H
 		buildStubs    func(store *mockdb.MockStore)
@@ -156,7 +157,7 @@ func TestCreateUserAPI(t *testing.T) {
 				store.EXPECT().
 					CreateUser(gomock.Any(), gomock.Any()).
 					Times(1).
-					Return(db.User{}, fmt.Errorf("Duplicate username"))
+					Return(db.User{}, &pq.Error{Code: "23505"}) // code for unique_violation postgres error
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusForbidden, recorder.Code)
