@@ -92,6 +92,7 @@ func TestCreateUserAPI(t *testing.T) {
 	// testCase defines the shape of each testcase object
 	type testCase struct {
 		name          string
+		//* mocks the shape of the http request payload (as JSON data)
 		body          gin.H
 		buildStubs    func(store *mockdb.MockStore)
 		checkResponse func(recorder *httptest.ResponseRecorder)
@@ -227,7 +228,7 @@ func TestCreateUserAPI(t *testing.T) {
 			server := NewServer(store)
 			recorder := httptest.NewRecorder()
 
-			// marshal body data to json
+			//? check the request object and convert it to a JSON object to pass to the endpoint
 			data, err := json.Marshal(tc.body)
 			require.NoError(t, err)
 
