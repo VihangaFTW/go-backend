@@ -64,6 +64,8 @@ func (m *JWTMaker) CreateToken(username string, duration time.Duration) (string,
 
 func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 
+	// keyFunc is a callback function that jwt libary calls to verify the signing algorithm.
+	// Returns the secret key for signature verification.
 	keyFunc := func(token *jwt.Token) (any, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		//? algorithm on the token does not match the server's signing algorithm
@@ -76,8 +78,13 @@ func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		return []byte(m.secretKey), nil
 	}
 
+	// parses the JWT string into its components (header.payload.signature).
+	// verifies the signature using the secret key from keyFunc
+	// validates expiration and other standard claims
+	// umarshals the payload into JWTPayloadClaims struct
 	jwtToken, err := jwt.ParseWithClaims(token, &JWTPayloadClaims{}, keyFunc)
 
+	// handle different types of errors
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, ErrExpiredToken
@@ -88,11 +95,15 @@ func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		}
 	}
 
+	// type assert to ensure the claims are of the expected type.
+	// This is a safety check to make sure the parsing worked correctly
 	payloadClaims, ok := jwtToken.Claims.(*JWTPayloadClaims)
+
 	if !ok {
 		return nil, ErrInvalidToken
 	}
 
+	// return the extracted Payload from the verified token
 	return &payloadClaims.Payload, nil
 
 }
