@@ -1,7 +1,6 @@
 package token
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
@@ -39,7 +38,9 @@ func NewJWTPayloadClaims(payload *Payload) *JWTPayloadClaims {
 	}
 }
 
-// NewJWTMaker creates a new JWTMakert
+// NewJWTMaker creates a new JWTMaker object.
+// The function returns a Maker interface as a safety check to ensure all required
+// methods are implemented.
 func NewJWTMaker(secretKey string) (Maker, error) {
 
 	if len(secretKey) < minSecretKeySize {
@@ -67,10 +68,12 @@ func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 	// keyFunc is a callback function that jwt libary calls to verify the signing algorithm.
 	// Returns the secret key for signature verification.
 	keyFunc := func(token *jwt.Token) (any, error) {
+		// assert whether the signing method field in the given token is the expected algorithm
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+
 		//? algorithm on the token does not match the server's signing algorithm
 		if !ok {
-			return nil, ErrInvalidToken
+			return nil, jwt.ErrTokenSignatureInvalid
 
 		}
 
@@ -84,15 +87,8 @@ func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 	// umarshals the payload into JWTPayloadClaims struct
 	jwtToken, err := jwt.ParseWithClaims(token, &JWTPayloadClaims{}, keyFunc)
 
-	// handle different types of errors
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
-			return nil, ErrExpiredToken
-		} else if errors.Is(err, ErrInvalidToken) {
-			return nil, ErrInvalidToken
-		} else {
-			return nil, err
-		}
+		return nil, err
 	}
 
 	// type assert to ensure the claims are of the expected type.
@@ -100,7 +96,7 @@ func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 	payloadClaims, ok := jwtToken.Claims.(*JWTPayloadClaims)
 
 	if !ok {
-		return nil, ErrInvalidToken
+		return nil, jwt.ErrTokenInvalidClaims
 	}
 
 	// return the extracted Payload from the verified token
