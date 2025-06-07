@@ -78,7 +78,7 @@ func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
 		}
 
 		// token signing method verified, return server's secret key to verify contents of jwt
-		return []byte(m.secretKey), nil
+		return []byte(m.secretKey), nil         
 	}
 
 	// parses the JWT string into its components (header.payload.signature).
