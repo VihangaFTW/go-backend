@@ -11,6 +11,8 @@ import (
 var (
 	ErrInvalidToken = errors.New("token is invalid")
 	ErrExpiredToken = errors.New("token is expired")
+	ErrMissingPasetoEnvVariable = errors.New("unspecified environment variable for symmetric encryption")
+	ErrFailedSKeyConversion     = errors.New("hex to symmetric key conversion failed")
 )
 
 // Payload contains the payload data of the token
