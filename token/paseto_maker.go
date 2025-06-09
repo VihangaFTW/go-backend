@@ -61,7 +61,7 @@ func (p *PasetoMaker) VerifyToken(token string) (*Payload, error) {
 	parsedToken, err := parser.ParseV4Local(p.symmetricKey, token, p.implicit)
 
 	if err != nil {
-		return nil, ErrInvalidToken
+		return nil, ErrExpiredToken
 	}
 
 	payload, err := getPayloadFromToken(parsedToken)

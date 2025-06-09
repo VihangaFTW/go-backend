@@ -37,3 +37,34 @@ func TestPasetoMaker(t *testing.T) {
 	require.WithinDuration(t, payload.IssuedAt, issuedAt, time.Second)
 	require.WithinDuration(t, payload.ExpiresAt, expiresAt, time.Second)
 }
+
+func TestExpiredPaseto(t *testing.T) {
+	// mock env variable
+	config := util.Config{PasetoHexKey: testingHexKey}
+	maker, err := NewPasetoMaker(config)
+
+	require.NoError(t, err)
+
+	username := util.RandomOwner()
+	// create the paseto token
+	token, err := maker.CreateToken(username, -time.Minute)
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+
+	// verify token
+	payload, err := maker.VerifyToken(token)
+	require.Error(t, err)
+	require.EqualError(t, err, ErrExpiredToken.Error())
+	require.Nil(t, payload)
+}
+
+func TestSKeyEnvNotSet(t *testing.T) {
+	config := &util.Config{
+		PasetoHexKey: "", // simulate missing key
+	}
+
+	maker, err := NewPasetoMaker(*config)
+	require.Error(t, err)
+	require.EqualError(t, err, ErrMissingPasetoEnvVariable.Error())
+	require.Nil(t, maker)
+}
