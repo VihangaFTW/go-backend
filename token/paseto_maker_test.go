@@ -68,3 +68,13 @@ func TestSKeyEnvNotSet(t *testing.T) {
 	require.EqualError(t, err, ErrMissingPasetoEnvVariable.Error())
 	require.Nil(t, maker)
 }
+
+func TestMalformedSKeyEnvVar(t *testing.T) {
+	config := &util.Config{
+		PasetoHexKey: "43C235235A4B", // malformed key, shorter than 32 bytes
+	}
+	maker, err := NewPasetoMaker(*config)
+	require.Error(t, err)
+	require.EqualError(t, err, ErrFailedSKeyConversion.Error())
+	require.Nil(t, maker)
+}

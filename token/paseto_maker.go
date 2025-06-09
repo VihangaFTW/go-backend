@@ -20,6 +20,7 @@ func NewPasetoMaker(config util.Config) (Maker, error) {
 
 	key := config.PasetoHexKey
 
+	//? first make sure we have a secret key to encrypt payload
 	if key == "" {
 		return nil, ErrMissingPasetoEnvVariable
 	}
