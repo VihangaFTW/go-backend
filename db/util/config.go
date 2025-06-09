@@ -8,11 +8,12 @@ type Config struct {
 	DBSource      string `mapstructure:"DB_SOURCE"`
 	DBDriver      string `mapstructure:"DB_DRIVER"`
 	ServerAddress string `mapstructure:"SERVER_ADDRESS"`
+	PasetoHexKey  string `mapstructure:"PASETO_SYMMETRIC_KEY"` //* 32 bytes hex string
 }
 
 // LoadConfig is responsible for loading the configuration from a file or env variable
 func LoadConfig(path string) (config Config, err error) {
-	
+
 	// tells Viper where to look for config files
 	viper.AddConfigPath(path)
 	// set the config file name to "app"
@@ -25,7 +26,7 @@ func LoadConfig(path string) (config Config, err error) {
 	// defined in the configuration struct (like DB_SOURCE, DB_DRIVER, and SERVER_ADDRESS) and use
 	// those values if they are set.
 	viper.AutomaticEnv()
-	
+
 	// actually reads the config file (app.env)
 	err = viper.ReadInConfig()
 	if err != nil {
