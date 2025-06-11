@@ -8,12 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-var testingHexKey = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
-
 func TestPasetoMaker(t *testing.T) {
-	// mock env variable
-	config := util.Config{PasetoHexKey: testingHexKey}
-	maker, err := NewPasetoMaker(config)
+	maker, err := NewPasetoMaker(TestingHexKey)
 
 	require.NoError(t, err)
 
@@ -39,9 +35,7 @@ func TestPasetoMaker(t *testing.T) {
 }
 
 func TestExpiredPaseto(t *testing.T) {
-	// mock env variable
-	config := util.Config{PasetoHexKey: testingHexKey}
-	maker, err := NewPasetoMaker(config)
+	maker, err := NewPasetoMaker(TestingHexKey)
 
 	require.NoError(t, err)
 
@@ -59,22 +53,23 @@ func TestExpiredPaseto(t *testing.T) {
 }
 
 func TestSKeyEnvNotSet(t *testing.T) {
-	config := &util.Config{
-		PasetoHexKey: "", // simulate missing key
-	}
-
-	maker, err := NewPasetoMaker(*config)
+	maker, err := NewPasetoMaker("") // simulate missing key
 	require.Error(t, err)
 	require.EqualError(t, err, ErrMissingPasetoEnvVariable.Error())
 	require.Nil(t, maker)
 }
 
 func TestMalformedSKeyEnvVar(t *testing.T) {
-	config := &util.Config{
-		PasetoHexKey: "43C235235A4B", // malformed key, shorter than 32 bytes
-	}
-	maker, err := NewPasetoMaker(*config)
+	maker, err := NewPasetoMaker("43C235235A4B") // malformed key, shorter than 32 bytes
 	require.Error(t, err)
 	require.EqualError(t, err, ErrFailedSKeyConversion.Error())
+	require.Nil(t, maker)
+}
+
+func TestInvalidKeyLength(t *testing.T) {
+	shortKey := "1234567890abcdef" // only 16 bytes (32 hex chars), should be 32 bytes (64 hex chars)
+	maker, err := NewPasetoMaker(shortKey)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "invalid key size")
 	require.Nil(t, maker)
 }

@@ -4,9 +4,10 @@ import (
 	"time"
 
 	"aidanwoods.dev/go-paseto"
-	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/google/uuid"
 )
+
+const TestingHexKey = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef"
 
 // PasetoMaker is a struct that holds the PASETO symmetric key for token operations.
 type PasetoMaker struct {
@@ -16,16 +17,19 @@ type PasetoMaker struct {
 
 // NewPasetoMaker creates a new PasetoMaker instance with the provided symmetric key.
 // It returns an error if the key is not valid.
-func NewPasetoMaker(config util.Config) (Maker, error) {
-
-	key := config.PasetoHexKey
+func NewPasetoMaker(hexKey string) (Maker, error) {
 
 	//? first make sure we have a secret key to encrypt payload
-	if key == "" {
+	if hexKey == "" {
 		return nil, ErrMissingPasetoEnvVariable
 	}
 
-	symmetricKey, err := paseto.V4SymmetricKeyFromHex(key)
+	// Add key length validation (32 bytes = 64 hex characters)
+	if len(hexKey) != 64 {
+		return nil, ErrInvalidKeySize
+	}
+
+	symmetricKey, err := paseto.V4SymmetricKeyFromHex(hexKey)
 	if err != nil {
 		return nil, ErrFailedSKeyConversion
 	}
