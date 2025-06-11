@@ -59,17 +59,18 @@ func TestSKeyEnvNotSet(t *testing.T) {
 	require.Nil(t, maker)
 }
 
-func TestMalformedSKeyEnvVar(t *testing.T) {
-	maker, err := NewPasetoMaker("43C235235A4B") // malformed key, shorter than 32 bytes
+func TestShortHexKey(t *testing.T) {
+	maker, err := NewPasetoMaker("23432423ab32cd") //  shorter than 64 hex characters
 	require.Error(t, err)
-	require.EqualError(t, err, ErrFailedSKeyConversion.Error())
+	require.EqualError(t, err, ErrInvalidKeySize.Error())
 	require.Nil(t, maker)
 }
 
-func TestInvalidKeyLength(t *testing.T) {
-	shortKey := "1234567890abcdef" // only 16 bytes (32 hex chars), should be 32 bytes (64 hex chars)
-	maker, err := NewPasetoMaker(shortKey)
+func TestInvalidHexKey(t *testing.T) {
+	// this key contains a "/" at the end which is not a part of hex encoding 
+	notHexKey := "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcde/"
+	maker, err := NewPasetoMaker(notHexKey)
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "invalid key size")
+	require.EqualError(t, err, ErrFailedSKeyConversion.Error())
 	require.Nil(t, maker)
 }

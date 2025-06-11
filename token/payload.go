@@ -13,7 +13,7 @@ var (
 	ErrExpiredToken             = errors.New("token is expired")
 	ErrMissingPasetoEnvVariable = errors.New("unspecified environment variable for symmetric encryption")
 	ErrFailedSKeyConversion     = errors.New("hex to symmetric key conversion failed")
-	ErrInvalidKeySize           = errors.New("key size must be 64 hex characters (32 bytes)")
+	ErrInvalidKeySize           = errors.New("invalid key size: must be 64 hex characters (32 bytes)")
 )
 
 // Payload contains the payload data of the token
