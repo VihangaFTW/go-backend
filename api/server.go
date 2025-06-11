@@ -1,7 +1,11 @@
 package api
 
 import (
+	"fmt"
+
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
+	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/token"
 	"github.com/gin-gonic/gin"
 	"github.com/gin-gonic/gin/binding"
 	"github.com/go-playground/validator/v10"
@@ -9,15 +13,22 @@ import (
 
 // Server serves HTTP requests for our banking service
 type Server struct {
-	store  db.Store
-	router *gin.Engine
+	store      db.Store
+	router     *gin.Engine
+	tokenMaker token.Maker
+	config     util.Config
 }
 
 // NewServer creates a new HTTP server and setup routing
-func NewServer(store db.Store) *Server {
+func NewServer(config util.Config, store db.Store) (*Server, error) {
 
-	server := &Server{store: store}
-	router := gin.Default()
+	tokenMaker, err := token.NewPasetoMaker(config.PasetoHexKey)
+
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token maker: %w", err) // %w wraps the original error
+	}
+	// initialize server struct; router will be added later
+	server := &Server{store: store, tokenMaker: tokenMaker, config: config}
 
 	//? setup a custom validation tag used to validate struct fields
 	//! interface{} = any type. Need to cast the interface to check what concrete type it is
@@ -27,18 +38,25 @@ func NewServer(store db.Store) *Server {
 		v.RegisterValidation("currency", validCurrency)
 	}
 
+	// register route handlers
+	server.setupRouter()
 
+	return server, nil
+}
+
+func (server *Server) setupRouter() {
+
+	router := gin.Default()
 	router.POST("/accounts", server.createAccount)
 	router.POST("/transfers", server.createTransfer)
 	router.GET("/accounts/:id", server.getAccount)
-	router.GET("/accounts", server.listAccount)	
+	router.GET("/accounts", server.listAccount)
 
 	router.POST("/users", server.createUser)
+	router.POST("/users/login", server.loginUser)
 
 	// add the routes to the router
 	server.router = router
-
-	return server
 }
 
 // Start runs the HTTP server on a specific address.

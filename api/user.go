@@ -1,6 +1,7 @@
 package api
 
 import (
+	"database/sql"
 	"net/http"
 
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
@@ -9,7 +10,7 @@ import (
 	"github.com/lib/pq"
 )
 
-// ? define request shape
+// ? define request shape for create user endpoint
 type createUserRequest struct {
 	Username string `json:"username" binding:"required,alphanum"`
 	Password string `json:"password" binding:"required,min=6"`
@@ -17,13 +18,23 @@ type createUserRequest struct {
 	Email    string `json:"email" binding:"required,email"`
 }
 
-type createUserResponse struct {
+// ? define response shape for create user endpoint
+type userResponse struct {
 	Username string `json:"username"`
 	FullName string `json:"full_name"`
 	Email    string `json:"email"`
 }
 
-// ? create the endpoing api handler
+// newUserResponse converts a db.User struct into a userResponse struct by omitting secret and/or unncessary fields.
+func newUserResponse(user db.User) userResponse {
+	return userResponse{
+		Username: user.Username,
+		FullName: user.FullName,
+		Email:    user.Email,
+	}
+}
+
+// ? define endpoint hadler for creating user
 func (server *Server) createUser(ctx *gin.Context) {
 
 	var request createUserRequest
@@ -60,11 +71,63 @@ func (server *Server) createUser(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
 		return
 	}
-	response := createUserResponse{
-		Username: user.Username,
-		FullName: user.FullName,
-		Email:    user.Email,
+	response := newUserResponse(user)
+	ctx.JSON(http.StatusOK, response)
+
+}
+
+// ? define request shape for login user endpoint
+type loginUserRequest struct {
+	Username string `json:"username" binding:"required,alphanum"`
+	Password string `json:"password" binding:"required,min=6"`
+}
+
+// ? define response shape for login user endpoint
+type loginUserResponse struct {
+	AccessToken string       `json:"access_token"`
+	User        userResponse `json:"user"`
+}
+
+// ? define endpoint handler for login in a user
+func (server *Server) loginUser(ctx *gin.Context) {
+	var req loginUserRequest
+	if err := ctx.ShouldBindJSON(&req); err != nil {
+		ctx.JSON(http.StatusBadRequest, errorResponse(err))
+		return
 	}
+
+	user, err := server.store.GetUser(ctx, req.Username)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			ctx.JSON(http.StatusNotFound, errorResponse(err))
+			return
+		}
+
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	err = util.CheckPassword(req.Password, user.HashedPassword)
+
+	//? check if given password matches its stored hash
+	if err != nil {
+		ctx.JSON(http.StatusUnauthorized, errorResponse(err))
+		return
+	}
+
+	// password correct. Generate access token
+	accessToken, err := server.tokenMaker.CreateToken(user.Username, server.config.AceesTokenDuration)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	response := loginUserResponse{
+		AccessToken: accessToken,
+		User:        newUserResponse(user),
+	}
+
 	ctx.JSON(http.StatusOK, response)
 
 }
