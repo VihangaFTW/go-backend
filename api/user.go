@@ -116,7 +116,7 @@ func (server *Server) loginUser(ctx *gin.Context) {
 	}
 
 	// password correct. Generate access token
-	accessToken, err := server.tokenMaker.CreateToken(user.Username, server.config.AceesTokenDuration)
+	accessToken, err := server.tokenMaker.CreateToken(user.Username, server.config.AccessTokenDuration)
 
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errorResponse(err))

@@ -47,13 +47,21 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 func (server *Server) setupRouter() {
 
 	router := gin.Default()
-	router.POST("/accounts", server.createAccount)
-	router.POST("/transfers", server.createTransfer)
-	router.GET("/accounts/:id", server.getAccount)
-	router.GET("/accounts", server.listAccount)
 
 	router.POST("/users", server.createUser)
 	router.POST("/users/login", server.loginUser)
+
+	// Create a route group that applies authentication middleware to all routes within it
+	// This means all routes in this group will require a valid access token to access
+	authRoutes := router.Group("/").Use(authMiddleware(server.tokenMaker))
+
+	// Protected account routes - require authentication
+	authRoutes.POST("/accounts", server.createAccount) // Create a new bank account
+	authRoutes.GET("/accounts/:id", server.getAccount) // Get a specific account by ID
+	authRoutes.GET("/accounts", server.listAccount)    // List all accounts for authenticated user
+
+	// Protected transfer routes - require authentication
+	authRoutes.POST("/transfers", server.createTransfer) // Create a money transfer between accounts
 
 	// add the routes to the router
 	server.router = router

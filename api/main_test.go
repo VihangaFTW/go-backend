@@ -14,8 +14,8 @@ import (
 
 func newTestServer(t *testing.T, store db.Store) *Server {
 	config := util.Config{
-		PasetoHexKey: token.TestingHexKey,
-		AceesTokenDuration: time.Minute,
+		PasetoHexKey:        token.TestingHexKey,
+		AccessTokenDuration: time.Minute,
 	}
 
 	server, err := NewServer(config, store)
