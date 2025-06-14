@@ -52,7 +52,7 @@ func TestAuthMiddleware(t *testing.T) {
 	testcases := []Testcase{
 		//* success
 		{
-			name: "OK", 
+			name: "OK",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				// Add valid Bearer token authorization header with 1-minute duration
 				addAuthorization(t, request, tokenMaker, authorizationHeadTypeBearer, "user", time.Minute)
@@ -75,7 +75,7 @@ func TestAuthMiddleware(t *testing.T) {
 		},
 		//* Invalid token format
 		{
-			name: "InvalidAuthorizationFormat", 
+			name: "InvalidAuthorizationFormat",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				// Add valid Bearer token authorization header with 1-minute duration
 				addAuthorization(t, request, tokenMaker, "", "user", time.Minute)
@@ -87,19 +87,19 @@ func TestAuthMiddleware(t *testing.T) {
 		},
 		//* Expired tokens
 		{
-			name: "UnsupportedAuthorization", 
+			name: "ExpiredToken",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
-				// Add valid Bearer token authorization header with 1-minute duration
+				// Add expired Bearer token authorization header (negative duration creates expired token)
 				addAuthorization(t, request, tokenMaker, authorizationHeadTypeBearer, "user", -time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
-				// Verify that the response status is 200 OK
+				// Verify that the response status is 401 Unauthorized for expired tokens
 				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 			},
 		},
 		//* Wrong authorization type (not Bearer)
 		{
-			name: "UnsupportedAuthorization", 
+			name: "UnsupportedAuthorization",
 			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
 				// Add valid Bearer token authorization header with 1-minute duration
 				addAuthorization(t, request, tokenMaker, "unsupported", "user", time.Minute)

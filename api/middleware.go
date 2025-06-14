@@ -34,7 +34,7 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		//* split the authorization header field value by whitespace. Happy path output: [Bearer, {token}]
 		fields := strings.Fields(authorizationHeader)
 		if len(fields) < 2 {
-			ctx.AbortWithStatusJSON(http.StatusUnauthorized, ErrAuthorizationHeadFormatInvalid)
+			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(ErrAuthorizationHeadFormatInvalid))
 			return
 		}
 
@@ -42,6 +42,7 @@ func authMiddleware(tokenMaker token.Maker) gin.HandlerFunc {
 		authorizationType := strings.ToLower(fields[0])
 		if authorizationType != authorizationHeadTypeBearer {
 			ctx.AbortWithStatusJSON(http.StatusUnauthorized, errorResponse(ErrAuthorizationHeadUnsupported))
+			return
 		}
 
 		accessToken := fields[1]
