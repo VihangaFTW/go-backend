@@ -1,6 +1,6 @@
 module github.com/VihangaFTW/Go-Backend
 
-go 1.24.1
+go 1.24.4
 
 require (
 	aidanwoods.dev/go-paseto v1.5.4
