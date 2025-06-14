@@ -11,6 +11,10 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
 
+    env:
+      DB_SOURCE: ${{ secrets.DB_SOURCE }}
+      PASETO_SYMMETRIC_KEY: ${{ secrets.PASETO_SYMMETRIC_KEY }}
+
     services:
       postgres:
         image: postgres:latest
@@ -27,14 +31,20 @@ jobs:
           --health-retries 5
 
     steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
       - name: Set up Go 1.24.2
         uses: actions/setup-go@v4
         with:
           go-version: ^1.24.2
         id: go
 
-      - name: Check out code
-        uses: actions/checkout@v4
+      - name: Setup configuration file
+        run: |
+          cp app.env.template app.env
+          sed -i 's|${DB_SOURCE}|${{ secrets.DB_SOURCE }}|g' app.env
+          sed -i 's|${PASETO_SYMMETRIC_KEY}|${{ secrets.PASETO_SYMMETRIC_KEY}}|g' app.env
 
       - name: Install golang-migrate CLI
         run: |
@@ -42,7 +52,7 @@ jobs:
           echo "${HOME}/go/bin" >> $GITHUB_PATH
 
       - name: Run DB migration
-        run: make migrateup
+        run: migrate -path db/migration -database "$DB_SOURCE" -verbose up
 
       - name: Run tests
         run: make test

@@ -9,10 +9,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	mockdb "github.com/VihangaFTW/Go-Backend/db/mock"
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
 	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/token"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 )
@@ -24,13 +26,16 @@ func TestGetAccountAPI(t *testing.T) {
 	//? 2. configure fake db to send the appropriate response back when the api endpoint is called with the account id as parameter (setup an "expectation")
 	//? 3. start the server and send the get request for the account
 	//? 4. validate response content
-	account := randomAccount()
+
+	user, _ := randomUser(t)
+	account := randomAccount(user.Username)
 
 	// define mock test case structure
 	type testCase struct {
 		name          string
 		accountID     int64
 		buildStubs    func(store *mockdb.MockStore)
+		setupAuth     func(t *testing.T, request *http.Request, tokenMaker token.Maker)
 		checkResponse func(t *testing.T, recorder *httptest.ResponseRecorder)
 	}
 
@@ -41,6 +46,9 @@ func TestGetAccountAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				//? define expectations
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(account, nil)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationHeadTypeBearer, user.Username, time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				// check response code
@@ -56,6 +64,9 @@ func TestGetAccountAPI(t *testing.T) {
 				//? define expectation
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(db.Account{}, sql.ErrNoRows)
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationHeadTypeBearer, user.Username, time.Minute)
+			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				// check response code
 				require.Equal(t, http.StatusNotFound, recorder.Code)
@@ -69,6 +80,9 @@ func TestGetAccountAPI(t *testing.T) {
 			buildStubs: func(store *mockdb.MockStore) {
 				//? define expectation
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(db.Account{}, sql.ErrConnDone)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationHeadTypeBearer, user.Username, time.Minute)
 			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				// check response code
@@ -84,10 +98,45 @@ func TestGetAccountAPI(t *testing.T) {
 				//? define expectation
 				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
 			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationHeadTypeBearer, user.Username, time.Minute)
+			},
 			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
 				// check response code
 				require.Equal(t, http.StatusBadRequest, recorder.Code)
 				// no account to check for content
+
+			},
+		},
+		{
+			name:      "UnauthorizedUser",
+			accountID: account.ID,
+			buildStubs: func(store *mockdb.MockStore) {
+				//? define expectations
+				store.EXPECT().GetAccount(gomock.Any(), gomock.Eq(account.ID)).Times(1).Return(account, nil)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				addAuthorization(t, request, tokenMaker, authorizationHeadTypeBearer, "unauthorized_user", time.Minute)
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				// check response code
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
+
+			},
+		},
+		{
+			name:      "NoAuthorization",
+			accountID: account.ID,
+			buildStubs: func(store *mockdb.MockStore) {
+				//? define expectations
+				store.EXPECT().GetAccount(gomock.Any(), gomock.Any()).Times(0)
+			},
+			setupAuth: func(t *testing.T, request *http.Request, tokenMaker token.Maker) {
+				//? no auth header in request
+			},
+			checkResponse: func(t *testing.T, recorder *httptest.ResponseRecorder) {
+				// check response code
+				require.Equal(t, http.StatusUnauthorized, recorder.Code)
 
 			},
 		},
@@ -121,8 +170,7 @@ func TestGetAccountAPI(t *testing.T) {
 			//make sure the server does not return an error
 			require.NoError(t, err)
 
-			// send back the response
-
+			tc.setupAuth(t, request, server.tokenMaker)
 			//? 1. router receives the get request
 			//? 2. the getAccount handler function runs
 			//? 3. calls store.GetAccount(ctx, 123)
@@ -137,10 +185,10 @@ func TestGetAccountAPI(t *testing.T) {
 
 }
 
-func randomAccount() db.Account {
+func randomAccount(owner string) db.Account {
 	return db.Account{
 		ID:       util.RandomAccountId(),
-		Owner:    util.RandomOwner(),
+		Owner:    owner,
 		Balance:  util.RandomMoney(),
 		Currency: util.RandomCurrency(),
 	}
