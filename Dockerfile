@@ -30,6 +30,8 @@ WORKDIR /app
 # --from=builder: copy from the previous build stage
 # This excludes source code, Go toolchain, and build cache
 COPY --from=builder /app/main .
+#todo: remove before production
+COPY app.env .
 
 # Expose port 8080 for the web server
 # This is for documentation - actual port binding happens at runtime
