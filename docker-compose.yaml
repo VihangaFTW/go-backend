@@ -1,0 +1,30 @@
+name: GO-Backend
+
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=12345
+      - POSTGRES_DB=simple_bank
+    healthcheck:
+    #? pg_isready is a PostgreSQL utility to check if the server is accepting connections
+      test: ["CMD-SHELL", "pg_isready -U root -d simple_bank"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      # ensures the database stays running unless manually stopped
+    restart: unless-stopped
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_SOURCE=postgresql://root:12345@postgres:5432/simple_bank?sslmode=disable
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # will automatically restart it if it crashes due to database connection issues
+    restart: on-failure
