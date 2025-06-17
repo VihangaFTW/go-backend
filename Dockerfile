@@ -1,4 +1,3 @@
-
 #? Stage 1: Build the Go binary and tools
 # Use Go compiler image with Alpine for building
 FROM golang:1.24.4-alpine3.22 AS builder
@@ -26,7 +25,7 @@ WORKDIR /app
 COPY --from=builder /app/main .
 
 # Copy configuration file (TODO: remove before production)
-COPY app.env .
+COPY --from=builder /app/app.env .
 
 # Copy the migrate executable from the builder stage
 COPY --from=builder /go/bin/migrate ./migrate
