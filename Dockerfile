@@ -24,9 +24,6 @@ WORKDIR /app
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/main .
 
-# Copy configuration file (TODO: remove before production)
-COPY --from=builder /app/app.env .
-
 # Copy the migrate executable from the builder stage
 COPY --from=builder /go/bin/migrate ./migrate
 
