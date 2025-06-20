@@ -9,13 +9,13 @@ dropdb:
 	docker exec -it bank_postgres dropdb simple_bank
 
 migrateup:
-	migrate -path db/migration -database "postgres://root:12345@localhost:5432/simple_bank?sslmode=disable" -verbose up 
+	migrate -path db/migration -database "postgres://root:vihanga123@go-backend-db.cnouamy08kar.ap-southeast-2.rds.amazonaws.com:5432/simple_bank?" -verbose up 
 
 migratedown:
-	migrate -path db/migration -database "postgres://root:12345@localhost:5432/simple_bank?sslmode=disable" -verbose down
+	migrate -path db/migration -database "postgres://root:vihanga123@go-backend-db.cnouamy08kar.ap-southeast-2.rds.amazonaws.com:5432/simple_bank?" -verbose down
 	
 migratedown1:
-	migrate -path db/migration -database "postgres://root:12345@localhost:5432/simple_bank?sslmode=disable" -verbose down 1
+	migrate -path db/migration -database "postgres://root:vihanga123@go-backend-db.cnouamy08kar.ap-southeast-2.rds.amazonaws.com:5432/simple_bank?" -verbose down 1
 
 sqlc:
 	sqlc generate
