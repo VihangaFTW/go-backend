@@ -10,8 +10,6 @@ else
     echo "No app.env file found"
 fi
 
-# Debug: Show current DB_SOURCE value
-echo "Current DB_SOURCE: $DB_SOURCE"
 
 # The $DB_SOURCE environment variable is available here because:
 # 1. It's defined in docker-compose.yaml under the 'api' service environment section
