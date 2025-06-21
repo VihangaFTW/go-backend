@@ -3,7 +3,14 @@
 # stop script execution when it encounters an error
 set -e
 
-. app.env
+# Export DB_SOURCE from app.env file if it exists
+if [ -f /app/app.env ]; then
+    . /app/app.env
+else
+    echo "No app.env file found"
+fi
+
+
 # The $DB_SOURCE environment variable is available here because:
 # 1. It's defined in docker-compose.yaml under the 'api' service environment section
 #* 2. Docker automatically makes environment variables available to the container at runtime
