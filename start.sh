@@ -5,9 +5,7 @@ set -e
 
 # Export DB_SOURCE from app.env file if it exists
 if [ -f /app/app.env ]; then
-    echo "Found app.env file, loading DB_SOURCE..."
-    export DB_SOURCE=$(grep "^DB_SOURCE=" /app/app.env | cut -d'=' -f2)
-    echo "DB_SOURCE loaded: $DB_SOURCE"
+    . app.env
 else
     echo "No app.env file found"
 fi
