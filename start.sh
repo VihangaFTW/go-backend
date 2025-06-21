@@ -5,7 +5,7 @@ set -e
 
 # Export DB_SOURCE from app.env file if it exists
 if [ -f /app/app.env ]; then
-    . app.env
+    . /app/app.env
 else
     echo "No app.env file found"
 fi
