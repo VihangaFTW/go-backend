@@ -30,7 +30,6 @@ COPY --from=builder /go/bin/migrate ./migrate
 # Copy database migration files
 COPY db/migration ./migration/
 
-COPY app.env .
 # Copy startup script
 COPY start.sh .
 

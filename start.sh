@@ -2,9 +2,6 @@
 
 # stop script execution when it encounters an error
 set -e
-
-source /app/app.env
-
 # The $DB_SOURCE environment variable is available here because:
 # 1. It's defined in docker-compose.yaml under the 'api' service environment section
 #* 2. Docker automatically makes environment variables available to the container at runtime
