@@ -31,6 +31,12 @@ jobs:
         # update db_source value in aws secret manager if db instance is changed, otherwise start.sh will not work
         run: aws secretsmanager get-secret-value --secret-id simple_bank --query SecretString --output text | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
 
+      - name: Display app.env contents for debugging
+        run: |
+          echo "--- Contents of app.env ---"
+          cat app.env
+          echo "---------------------------"
+
       - name: Build, tag, and push docker image to Amazon ECR
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
