@@ -1,4 +1,3 @@
-
 startdb:
 	docker run --name bank_postgres --network bank-network -e POSTGRES_USER=root -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d postgres:latest
 
@@ -32,4 +31,7 @@ server:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/VihangaFTW/Go-Backend/db/sqlc Store
 
-.phony: createdb startdb dropdb migrateup migratedown migratedown1 sqlc test psql server mock 
+aws-ecr-login:
+	aws ecr get-login-password --region $(AWS_REGION) | docker login --username AWS --password-stdin $(AWS_ACCOUNT_ID).dkr.ecr.$(AWS_REGION).amazonaws.com
+
+.phony: createdb startdb dropdb migrateup migratedown migratedown1 sqlc test psql server mock aws-ecr-login;
