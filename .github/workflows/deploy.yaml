@@ -29,13 +29,20 @@ jobs:
 
       - name: Load secrets and save to app.env
         # update db_source value in aws secret manager if db instance is changed, otherwise start.sh will not work
-        run: aws secretsmanager get-secret-value --secret-id simple_bank --query SecretString --output text | jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' > app.env
-
-      - name: Display app.env contents for debugging
         run: |
-          echo "--- Contents of app.env ---"
-          cat app.env
+          set -eo pipefail
+          echo "Fetching secret 'simple_bank' from AWS Secrets Manager..."
+          aws secretsmanager get-secret-value --secret-id simple_bank --query SecretString --output text > secret.json
+          echo "--- Raw secret from AWS ---"
+          cat secret.json
           echo "---------------------------"
+
+          echo "Processing secret with jq..."
+          jq -r 'to_entries|map("\(.key)=\(.value)")|.[]' secret.json > app.env
+
+          echo "--- Final contents of app.env ---"
+          cat app.env
+          echo "---------------------------------"
 
       - name: Build, tag, and push docker image to Amazon ECR
         env:
