@@ -2,10 +2,13 @@
 
 # stop script execution when it encounters an error
 set -e
-# The $DB_SOURCE environment variable is available here because:
-# 1. It's defined in docker-compose.yaml under the 'api' service environment section
-#* 2. Docker automatically makes environment variables available to the container at runtime
-# 3. When this script runs inside the Docker container, it inherits all environment variables set by Docker Compose
+
+# Load environment variables from app.env file
+if [ -f /app/app.env ]; then
+    set -a  # automatically export all variables
+    . /app/app.env
+    set +a  # turn off automatic export
+fi
 
 echo "running db migration..."
 # run the migration files to populate the db with the tables
