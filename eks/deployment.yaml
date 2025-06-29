@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-bank-api-deployment
+  labels:
+    app: simple-bank-api
+spec:
+  # optional field: default is 1
+  replicas: 1
+  # required field
+  selector:
+    # all pods that have this label will be managed by this deployment
+    matchLabels:
+      app: simple-bank-api
+  # required field: this is the Pod schema
+  template:
+    metadata:
+      labels:
+        app: simple-bank-api
+    spec:
+      containers:
+        - name: simple-bank-api
+          image: 269172689858.dkr.ecr.ap-southeast-2.amazonaws.com/simplebank:d486bc615a441cd87bb3010e0b5df516c8471b6b
+          ports:
+            - containerPort: 8080
+
