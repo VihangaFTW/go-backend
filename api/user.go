@@ -123,6 +123,20 @@ func (server *Server) loginUser(ctx *gin.Context) {
 		return
 	}
 
+
+	//? generate refresh token too
+	refreshToken, err := server.tokenMaker.CreateToken(user.Username, server.config.RefreshTokenDuration)
+
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errorResponse(err))
+		return
+	}
+
+	// create a new session
+	server.store.CreateSession(ctx, db.CreateSessionParams{
+		ID: 
+	})
+
 	response := loginUserResponse{
 		AccessToken: accessToken,
 		User:        newUserResponse(user),
