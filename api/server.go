@@ -50,6 +50,7 @@ func (server *Server) setupRouter() {
 
 	router.POST("/users", server.createUser)
 	router.POST("/users/login", server.loginUser)
+	router.POST("/tokens/renew_access", server.renewAccessToken)
 
 	// Create a route group that applies authentication middleware to all routes within it
 	// This means all routes in this group will require a valid access token to access
@@ -68,7 +69,7 @@ func (server *Server) setupRouter() {
 }
 
 // Start runs the HTTP server on a specific address.
-func (server *Server) Start(address string) error {
+func (server *Server) Start(address string) error { 
 	return server.router.Run(address)
 }
 

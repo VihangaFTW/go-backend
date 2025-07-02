@@ -39,24 +39,24 @@ func NewPasetoMaker(hexKey string) (Maker, error) {
 	}, nil
 }
 
-func (p *PasetoMaker) CreateToken(username string, duration time.Duration) (string, error) {
+func (p *PasetoMaker) CreateToken(username string, duration time.Duration) (string, *Payload, error) {
 	// create the paseto token
 	token := paseto.NewToken()
 
-	// create uuid for token id
-	tokenId, err := uuid.NewRandom()
+	// create payload (payload id is the token uuid)
+	payload, err := NewPayload(username, duration)
 
 	if err != nil {
-		return "", err
+		return "", payload, err
 	}
 
 	// add data to token
-	token.Set("id", tokenId)
+	token.Set("id", payload.ID)
 	token.Set("username", username)
-	token.SetIssuedAt(time.Now())
-	token.SetExpiration(time.Now().Add(duration))
+	token.SetIssuedAt(payload.IssuedAt)
+	token.SetExpiration(payload.ExpiresAt)
 
-	return token.V4Encrypt(p.symmetricKey, p.implicit), nil
+	return token.V4Encrypt(p.symmetricKey, p.implicit), payload, nil
 
 }
 

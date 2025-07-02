@@ -14,6 +14,7 @@ type Config struct {
 	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
 	PasetoHexKey        string        `mapstructure:"PASETO_SYMMETRIC_KEY"` //* 32 bytes hex string
 	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 }
 
 // LoadConfig is responsible for loading the configuration from a file or env variable

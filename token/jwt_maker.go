@@ -50,17 +50,17 @@ func NewJWTMaker(secretKey string) (Maker, error) {
 	return &JWTMaker{secretKey: secretKey}, nil
 }
 
-func (m *JWTMaker) CreateToken(username string, duration time.Duration) (string, error) {
+func (m *JWTMaker) CreateToken(username string, duration time.Duration) (string, *Payload, error) {
 	payload, err := NewPayload(username, duration)
 
 	if err != nil {
-		return "", err
+		return "", payload, err
 	}
 	//* create an unsigned JWT token struct
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, NewJWTPayloadClaims(payload))
 	//* serialize the struct into the standard JWT string format (header.payload.signature)
 	signedString, err := jwtToken.SignedString([]byte(m.secretKey))
-	return signedString, err
+	return signedString, payload, err
 }
 
 func (m *JWTMaker) VerifyToken(token string) (*Payload, error) {
