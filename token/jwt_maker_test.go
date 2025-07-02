@@ -31,6 +31,7 @@ func TestJWTMaker(t *testing.T) {
 	token, payload, err := maker.CreateToken(username, duration)
 	require.NoError(t, err)    // Token creation should succeed
 	require.NotEmpty(t, token) // Token should not be empty string
+	require.NotEmpty(t, payload)
 
 	// Step 4: Verify the token and extract its payload
 	// This tests the VerifyToken functionality and ensures the round-trip works
@@ -63,6 +64,7 @@ func TestExpiredJWTToken(t *testing.T) {
 	token, payload, err := maker.CreateToken(username, -time.Minute)
 	require.NoError(t, err)    // Token creation should still succeed
 	require.NotEmpty(t, token) // Token should be created (expiration is checked during verification)
+	require.NotEmpty(t, payload)
 
 	// Step 4: Try to verify the expired token
 	// This should fail because the token is expired

@@ -121,6 +121,7 @@ func TestCreateUserAPI(t *testing.T) {
 				//? Gomock runs the provided Matcher's Matches function and determines whether the expectation matches
 				//? depending on the results of this function.
 				store.EXPECT().CreateUser(gomock.Any(), EqCreateUserParams(arg, password)).Times(1).Return(user, nil)
+								
 			},
 			checkResponse: func(recorder *httptest.ResponseRecorder) {
 				require.Equal(t, http.StatusOK, recorder.Code)
