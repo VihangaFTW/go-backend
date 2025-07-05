@@ -1,0 +1,75 @@
+Project SimpleBank {
+  database_type: 'PostgreSQL'
+  Note: '''
+    # Simple Bank Database Schema
+    A banking application with user authentication, accounts, and transaction management.
+  '''
+}
+
+Table users {
+  username varchar [pk, note: 'Primary key - unique username']
+  hashed_password varchar [not null, note: 'Bcrypt hashed password']
+  full_name varchar [not null, note: 'User full name']
+  email varchar [not null, unique, note: 'User email address']
+  created_at timestamptz [not null, default: `now()`, note: 'Account creation timestamp']
+  password_changed_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: 'Last password change timestamp']
+
+  Note: 'User accounts with authentication information'
+}
+
+Table accounts {
+  id bigserial [pk, note: 'Auto-incrementing account ID']
+  owner varchar [not null, ref: > users.username, note: 'Account owner - references username']
+  balance bigint [not null, note: 'Account balance in smallest currency unit']
+  currency varchar [not null, note: 'Currency code (USD, EUR, etc.)']
+  created_at timestamptz [not null, default: `now()`, note: 'Account creation timestamp']
+
+  indexes {
+    owner [name: 'idx_accounts_owner']
+    (owner, currency) [unique, name: 'owner_currency_key', note: 'One account per currency per user']
+  }
+
+  Note: 'Bank accounts belonging to users'
+}
+
+Table entries {
+  id bigserial [pk, note: 'Auto-incrementing entry ID']
+  account_id bigint [not null, ref: > accounts.id, note: 'References account']
+  amount bigint [not null, note: 'Transaction amount - can be negative or positive']
+
+  indexes {
+    account_id [name: 'idx_entries_account_id']
+  }
+
+  Note: 'Account transaction entries (debits and credits)'
+}
+
+Table transfers {
+  id bigserial [pk, note: 'Auto-incrementing transfer ID']
+  from_account_id bigint [not null, ref: > accounts.id, note: 'Source account']
+  to_account_id bigint [not null, ref: > accounts.id, note: 'Destination account']
+  amount bigint [not null, note: 'Transfer amount - must be positive']
+  created_at timestamptz [not null, default: `now()`, note: 'Transfer timestamp']
+
+  indexes {
+    from_account_id [name: 'idx_transfers_from_account']
+    to_account_id [name: 'idx_transfers_to_account']
+    (from_account_id, to_account_id) [name: 'idx_transfers_from_to_account']
+  }
+
+  Note: 'Money transfers between accounts'
+}
+
+Table sessions {
+  id uuid [pk, note: 'Session UUID - matches refresh token ID']
+  username varchar [not null, ref: > users.username, note: 'Session owner']
+  refresh_token varchar [not null, note: 'Refresh token for authentication']
+  user_agent varchar [not null, note: 'Client user agent string']
+  client_ip varchar [not null, note: 'Client IP address']
+  is_blocked boolean [not null, default: false, note: 'Session blocked status']
+  expires_at timestamptz [not null, note: 'Session expiration time']
+  created_at timestamptz [not null, default: `now()`, note: 'Session creation time']
+
+  Note: 'User authentication sessions with refresh tokens'
+}
+

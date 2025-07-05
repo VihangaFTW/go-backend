@@ -19,19 +19,17 @@ func TestTransferTx(t *testing.T) {
 	//? channels to retrieve the result and errors from separate goroutines into the main thread
 	errors := make(chan error)
 	results := make(chan TransferTxResult)
-
-	//? run n concurrent transfer transactions
-	for range n {
+	
+	//? run n concurrent transfer transactions.
+	for i := 0; i < n; i++ {
 		go func() {
 			result, err := store.TransferTx(context.Background(), TransferTxParams{
 				FromAccountID: account1.ID,
 				ToAccountID:   account2.ID,
 				Amount:        amount,
 			})
-
 			errors <- err
 			results <- result
-
 		}()
 	}
 	//? ensure each transaction executes exactly once
