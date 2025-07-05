@@ -25,6 +25,7 @@ type renewAccessTokenResponse struct {
 // renewAccessToken handles the refresh token endpoint.
 // This endpoint allows clients to obtain a new access token using a valid refresh token
 // without requiring the user to log in again.
+// A refresh token's id is mapped to a session record in the db.
 func (server *Server) renewAccessToken(ctx *gin.Context) {
 	// Parse and validate the incoming JSON request.
 	var req renewAccessTokenRequest
@@ -103,6 +104,6 @@ func (server *Server) renewAccessToken(ctx *gin.Context) {
 		AccessTokenExpiresAt: accessPayload.ExpiresAt,
 	}
 
-	// Return the new access token to the client.	
-	ctx.JSON(http.StatusOK, response)
+	// Return the new access token to the client.
+	ctx.JSON(http.StatusOK, response)	
 }
