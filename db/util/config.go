@@ -9,11 +9,14 @@ import (
 // Config stores all configuration of the application.
 // The values are read by viper from a config file or environment variables.
 type Config struct {
-	DBSource            string        `mapstructure:"DB_SOURCE"`
-	DBDriver            string        `mapstructure:"DB_DRIVER"`
-	ServerAddress       string        `mapstructure:"SERVER_ADDRESS"`
-	PasetoHexKey        string        `mapstructure:"PASETO_SYMMETRIC_KEY"` //* 32 bytes hex string
-	AccessTokenDuration time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
+	DBSource string `mapstructure:"DB_SOURCE"`
+	DBDriver string `mapstructure:"DB_DRIVER"`
+
+	HTTPServerAddress string `mapstructure:"HTTP_SERVER_ADDRESS"`
+	GRPCServerAddress string `mapstructure:"GRPC_SERVER_ADDRESS"`
+
+	PasetoHexKey         string        `mapstructure:"PASETO_SYMMETRIC_KEY"` //* 32 bytes hex string
+	AccessTokenDuration  time.Duration `mapstructure:"ACCESS_TOKEN_DURATION"`
 	RefreshTokenDuration time.Duration `mapstructure:"REFRESH_TOKEN_DURATION"`
 }
 
