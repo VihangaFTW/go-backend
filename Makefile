@@ -1,13 +1,13 @@
-DB_URL = postgres://root:vihanga123@go-backend-db.cnouamy08kar.ap-southeast-2.rds.amazonaws.com:5432/simple_bank
+DB_URL = postgres://root:12345@localhost:5432/simple_bank?sslmode=disable
 
 startdb:
-	docker run --name bank_postgres --network bank-network -e POSTGRES_USER=root -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d postgres:latest
+	docker run --name postgres  -e POSTGRES_USER=root -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d postgres:latest
 
 createdb:
-	docker exec -it bank_postgres createdb --username=root --owner=root simple_bank
+	docker exec -it postgres createdb --username=root --owner=root simple_bank
 
 dropdb:
-	docker exec -it bank_postgres dropdb simple_bank
+	docker exec -it postgres dropdb simple_bank
 
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up 
@@ -44,7 +44,7 @@ db_schema:
 
 proto:
 	rm -f pb/*.go
-	protoc --proto_path=proto --go_out=pb --go_opt=paths=source_relative --go-grpc_out=pb --go-grpc_opt=paths=source_relative proto/*.proto
+	protoc --grpc-gateway_out=pb --grpc-gateway_opt paths=source_relative --proto_path=proto --go_out=pb --go_opt=paths=source_relative --go-grpc_out=pb --go-grpc_opt=paths=source_relative proto/*.proto
 
 evans:
 	evans --host localhost --port 9090 -r repl

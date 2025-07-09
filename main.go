@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net"
+	"net/http"
 
 	"github.com/VihangaFTW/Go-Backend/api"
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
 	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/VihangaFTW/Go-Backend/gapi"
 	"github.com/VihangaFTW/Go-Backend/pb"
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 
@@ -101,5 +104,51 @@ func runGrpcServer(config util.Config, store db.Store) {
 	err = grpcServer.Serve(listener)
 	if err != nil {
 		log.Fatal("cannot start grpc server:", err)
+	}
+}
+
+// runGatewayServer starts the HTTP gateway server.
+// It translates RESTful HTTP/JSON requests into gRPC requests and forwards them to the gRPC server.
+// This allows clients to interact with the gRPC service using a familiar REST API.
+// Parameters:
+//   - config: Application configuration containing server settings.
+//   - store: Database store for handling data operations.
+func runGatewayServer(config util.Config, store db.Store) {
+	// Create a new server instance, which implements the gRPC service handlers.
+	server, err := gapi.NewServer(config, store)
+	if err != nil {
+		log.Fatal("cannot create gRPC server:", err)
+	}
+
+	// Create a new gRPC-gateway mux for routing HTTP requests to gRPC handlers.
+	grpcMux := runtime.NewServeMux()
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	// Register the gRPC server handlers with the gRPC-gateway mux.
+	// This connects the protobuf-defined HTTP endpoints to the gRPC service implementation.
+	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
+
+	if err != nil {
+		log.Fatal("cannot register handler server")
+	}
+
+	// Create a standard HTTP mux and mount the gRPC-gateway mux on it.
+	// All incoming requests to the root path "/" will be handled by the gRPC gateway.
+	mux := http.NewServeMux()
+	mux.Handle("/", grpcMux)
+
+	// Create a TCP listener for the HTTP gateway server on the configured address.
+	listener, err := net.Listen("tcp", config.HTTPServerAddress)
+	if err != nil {
+		log.Fatal("cannot create tcp listener for http gateway server")
+	}
+
+	// Log the server start message with the actual listening address.
+	log.Printf("start http gateway at %s", listener.Addr().String())
+
+	// Start the HTTP server to serve requests on the listener.
+	err = http.Serve(listener, mux)
+	if err != nil {
+		log.Fatal("cannot start http gateway server")
 	}
 }
