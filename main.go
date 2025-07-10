@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"log"
 	"net"
 	"net/http"
@@ -17,8 +18,15 @@ import (
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	"io/fs"
+
 	_ "github.com/lib/pq" // PostgreSQL driver import for side effects
 )
+
+// ! embedded variables should be package scoped
+//
+//go:embed doc/swagger/*
+var swaggerFS embed.FS
 
 // main is the entry point of the application.
 // It initializes the database connection and starts the gRPC server.
@@ -153,15 +161,21 @@ func runGatewayServer(config util.Config, store db.Store) {
 	mux := http.NewServeMux()
 	mux.Handle("/", grpcMux)
 
-	// Create a file server to serve Swagger UI static files from the "./doc/swagger" directory.
-	fs := http.FileServer(http.Dir("./doc/swagger"))
+	// Create a file server to serve Swagger UI static files from the embedded file system.
+	// Use fs.Sub to create a sub-filesystem that points directly to the swagger files,
+	// removing the "doc/swagger" prefix so files can be accessed at their expected paths.
+	swaggerSubFS, err := fs.Sub(swaggerFS, "doc/swagger")
+	if err != nil {
+		log.Fatal("cannot create swagger sub filesystem:", err)
+	}
+	fileServer := http.FileServerFS(swaggerSubFS)
 
 	// Handle all requests to "/swagger/" by stripping the prefix and passing them to the file server.
 	// This is necessary because the file server expects file paths relative to its root directory ("./doc/swagger"),
 	// but the HTTP requests include the "/swagger/" prefix. http.StripPrefix removes this prefix,
 	// allowing the file server to find the correct files (e.g., a request for "/swagger/index.html"
 	// becomes a lookup for "index.html" in the "./doc/swagger" directory).
-	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fileServer))
 
 	// Create a TCP listener for the HTTP gateway server on the configured address.
 	listener, err := net.Listen("tcp", config.HTTPServerAddress)
