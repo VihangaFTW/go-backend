@@ -25,7 +25,7 @@ A production-ready banking backend system built with Go, implementing secure use
 
 ### Security & Authentication
 
-- PASETO token-based authentication
+- PASETO & JWT token-based authentication
 - Authorization middleware for protected endpoints
 - Client metadata tracking (IP, User-Agent)
 - Session blocking capabilities
