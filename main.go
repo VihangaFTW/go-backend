@@ -153,6 +153,9 @@ func runGatewayServer(config util.Config, store db.Store) {
 	mux := http.NewServeMux()
 	mux.Handle("/", grpcMux)
 
+	fs := http.FileServer(http.Dir("./doc/swagger"))
+	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
+
 	// Create a TCP listener for the HTTP gateway server on the configured address.
 	listener, err := net.Listen("tcp", config.HTTPServerAddress)
 	if err != nil {
