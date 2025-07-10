@@ -153,7 +153,14 @@ func runGatewayServer(config util.Config, store db.Store) {
 	mux := http.NewServeMux()
 	mux.Handle("/", grpcMux)
 
+	// Create a file server to serve Swagger UI static files from the "./doc/swagger" directory.
 	fs := http.FileServer(http.Dir("./doc/swagger"))
+
+	// Handle all requests to "/swagger/" by stripping the prefix and passing them to the file server.
+	// This is necessary because the file server expects file paths relative to its root directory ("./doc/swagger"),
+	// but the HTTP requests include the "/swagger/" prefix. http.StripPrefix removes this prefix,
+	// allowing the file server to find the correct files (e.g., a request for "/swagger/index.html"
+	// becomes a lookup for "index.html" in the "./doc/swagger" directory).
 	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fs))
 
 	// Create a TCP listener for the HTTP gateway server on the configured address.

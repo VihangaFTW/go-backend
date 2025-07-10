@@ -138,7 +138,7 @@
         "refresh_token": {
           "type": "string"
         },
-        "access_oken_expires_at": {
+        "access_token_expires_at": {
           "type": "string",
           "format": "date-time"
         },
