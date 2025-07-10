@@ -15,6 +15,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	_ "github.com/lib/pq" // PostgreSQL driver import for side effects
 )
@@ -40,6 +41,9 @@ func main() {
 	// The store provides methods for database operations and transaction management.
 	store := db.NewStore(conn)
 
+	// Start the HTTP gateway server in a separate goroutine to run concurrently with gRPC.
+	// This allows both servers to run simultaneously on different ports.
+	go runGatewayServer(config, store)
 	// Start the gRPC server with the configured settings and database store.
 	runGrpcServer(config, store)
 }
@@ -93,7 +97,7 @@ func runGrpcServer(config util.Config, store db.Store) {
 	// This listener will accept incoming gRPC connections.
 	listener, err := net.Listen("tcp", config.GRPCServerAddress)
 	if err != nil {
-		log.Fatal("cannot create tcp listener for grpc server")
+		log.Fatal("cannot create tcp listener for grpc server:", err)
 	}
 
 	// Log the server start message with the actual listening address.
@@ -120,8 +124,20 @@ func runGatewayServer(config util.Config, store db.Store) {
 		log.Fatal("cannot create gRPC server:", err)
 	}
 
+	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
+		MarshalOptions: protojson.MarshalOptions{
+			UseProtoNames: true, // Use original protobuf field names instead of camelCase.
+		},
+		UnmarshalOptions: protojson.UnmarshalOptions{
+			DiscardUnknown: true, // Ignore unknown fields in incoming JSON to prevent errors.
+		},
+	})
+
 	// Create a new gRPC-gateway mux for routing HTTP requests to gRPC handlers.
-	grpcMux := runtime.NewServeMux()
+	grpcMux := runtime.NewServeMux(
+		jsonOption,
+	)
+
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	// Register the gRPC server handlers with the gRPC-gateway mux.
@@ -129,7 +145,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
 
 	if err != nil {
-		log.Fatal("cannot register handler server")
+		log.Fatal("cannot register handler server:", err)
 	}
 
 	// Create a standard HTTP mux and mount the gRPC-gateway mux on it.
@@ -140,7 +156,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 	// Create a TCP listener for the HTTP gateway server on the configured address.
 	listener, err := net.Listen("tcp", config.HTTPServerAddress)
 	if err != nil {
-		log.Fatal("cannot create tcp listener for http gateway server")
+		log.Fatal("cannot create tcp listener for http gateway server:", err)
 	}
 
 	// Log the server start message with the actual listening address.
@@ -149,6 +165,6 @@ func runGatewayServer(config util.Config, store db.Store) {
 	// Start the HTTP server to serve requests on the listener.
 	err = http.Serve(listener, mux)
 	if err != nil {
-		log.Fatal("cannot start http gateway server")
+		log.Fatal("cannot start http gateway server:", err)
 	}
 }

@@ -44,13 +44,16 @@ func (server *Server) LoginUser(ctx context.Context, req *pb.LoginUserRequest) (
 		return nil, status.Errorf(codes.Internal, "failed to create refresh token")
 	}
 
+	// extract metadata
+	metadata := server.extractMetadata(ctx)
+
 	// create a session
 	session, err := server.store.CreateSession(ctx, db.CreateSessionParams{
 		ID:           refreshPayload.ID,
 		Username:     user.Username,
 		RefreshToken: refreshToken,
-		UserAgent:    "",
-		ClientIp:     "",
+		UserAgent:    metadata.UserAgent,
+		ClientIp:     metadata.ClientIp,
 		IsBlocked:    false,
 		ExpiresAt:    refreshPayload.ExpiresAt,
 	})
