@@ -1,0 +1,22 @@
+syntax= "proto3";
+
+package pb;
+
+option go_package = "github.com/VihangaFTW/Go-Backend/pb";
+
+import "user.proto";
+import "google/protobuf/timestamp.proto";
+
+message LoginUserRequest {
+    string username = 1;
+    string password =  2;
+}
+
+message LoginUserResponse{
+    User user =  1;
+    string session_id  =  2 [json_name = "session_id"];
+    string access_token = 3 [json_name = "access_token"];
+    string refresh_token = 4 [json_name = "refresh_token"];
+    google.protobuf.Timestamp access_token_expires_at = 5 [json_name="access_oken_expires_at"];
+    google.protobuf.Timestamp refresh_token_expires_at = 6 [json_name="refresh_token_expires_at"];
+}
