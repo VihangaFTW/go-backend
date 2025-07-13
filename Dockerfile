@@ -11,8 +11,6 @@ COPY . .
 # Compile the Go application into a single binary
 RUN go build -o main main.go
 
-# Install golang-migrate CLI for database migrations
-RUN go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 #? Stage 2: Create minimal runtime image
 # Use minimal Alpine Linux base image for production
@@ -24,11 +22,11 @@ WORKDIR /app
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/main .
 
-# Copy the migrate executable from the builder stage
-COPY --from=builder /go/bin/migrate ./migrate
+# # Copy the migrate executable from the builder stage
+# COPY --from=builder /go/bin/migrate ./migrate
 
-# Copy database migration files
-COPY db/migration ./migration/
+# # Copy database migration files
+# COPY db/migration ./migration/
 
 # Copy environment configuration file
 COPY --from=builder /app/app.env .
@@ -42,8 +40,8 @@ RUN chmod +x start.sh
 # Expose port 8080 for the web server
 EXPOSE 8080
 
-# Set the startup script as entrypoint to run migrations before starting the app
-ENTRYPOINT [ "/app/start.sh" ]
+# Set the startup script as entrypoint to run migrations before starting the app [migrations are un inside the main function now]
+# ENTRYPOINT [ "/app/start.sh" ]
 
 # Default command to run the application
 CMD ["/app/main"]

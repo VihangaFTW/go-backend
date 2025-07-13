@@ -4,10 +4,11 @@
 set -e
 
 # Load environment variables from app.env file
+#! NOTE: When we source a file in bash/sh, it only sets variables that don't already exist. Since Docker compose file pre-sets DB_SOURCE before the api container starts,that env variable is NOT overwriiten.
+#* DB_SOURCE still points to the internal docker postgres service instead of localhost. Otherwise,
+#* the DB_SOURCE would point to localhost as defined in env file and migrations would fail
 if [ -f /app/app.env ]; then
-    set -a  # automatically export all variables
     . /app/app.env
-    set +a  # turn off automatic export
 fi
 
 echo "running db migration..."
