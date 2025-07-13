@@ -13,6 +13,9 @@ import (
 	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/VihangaFTW/Go-Backend/gapi"
 	"github.com/VihangaFTW/Go-Backend/pb"
+	"github.com/golang-migrate/migrate/v4"
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -44,6 +47,9 @@ func main() {
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
 	}
+
+	//* run db migrations
+	runDbMigrations(config.MigrationURL, config.DBSource)
 
 	// Create a new store instance that wraps the database connection.
 	// The store provides methods for database operations and transaction management.
@@ -191,4 +197,17 @@ func runGatewayServer(config util.Config, store db.Store) {
 	if err != nil {
 		log.Fatal("cannot start http gateway server:", err)
 	}
+}
+
+func runDbMigrations(migrationUrl string, dbSource string) {
+	migration, err := migrate.New(migrationUrl, dbSource)
+	if err != nil {
+		log.Fatal("cannot create new migrate instance:", err)
+	}
+	// ignore the no change error which simply means that there are no new migrations to make
+	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal("failed to  run migrate up:", err)
+	}
+
+	log.Println("db migration success!")
 }
