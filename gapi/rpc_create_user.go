@@ -6,12 +6,21 @@ import (
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
 	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/VihangaFTW/Go-Backend/pb"
+	validator "github.com/VihangaFTW/Go-Backend/rpc_validator"
 	"github.com/lib/pq"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
 func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest) (*pb.CreateUserResponse, error) {
+
+	//! validate response fields
+	violations := validateCreateUserRequest(req)
+
+	if violations != nil {
+		return nil, invalidArgumentError(violations)
+	}
 
 	// get password hashedPassword
 	hashedPassword, err := util.HashPassword(req.GetPassword())
@@ -44,10 +53,31 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, status.Errorf(codes.Internal, "failed to create user: %s", err)
 	}
 
-
 	response := &pb.CreateUserResponse{
 		User: convertUser(user),
 	}
 
 	return response, nil
+}
+
+func validateCreateUserRequest(req *pb.CreateUserRequest) (violations []*errdetails.BadRequest_FieldViolation) {
+
+	if err := validator.ValidateUsername(req.GetFullName()); err != nil {
+		violations = append(violations, fieldViolation("username", err))
+	}
+
+	if err := validator.ValidatePassword(req.GetPassword()); err != nil {
+		violations = append(violations, fieldViolation("password", err))
+	}
+
+	if err := validator.ValidateEmail(req.GetEmail()); err != nil {
+		violations = append(violations, fieldViolation("email", err))
+	}
+
+	if err := validator.ValidateFullName(req.GetFullName()); err != nil {
+		violations = append(violations, fieldViolation("full_name", err))
+	}
+
+	return
+
 }
