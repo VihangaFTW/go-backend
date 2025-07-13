@@ -25,8 +25,8 @@ COPY --from=builder /app/main .
 # # Copy the migrate executable from the builder stage
 # COPY --from=builder /go/bin/migrate ./migrate
 
-# # Copy database migration files
-# COPY db/migration ./migration/
+# Copy database migration files
+COPY db/migration ./db/migration/
 
 # Copy environment configuration file
 COPY --from=builder /app/app.env .

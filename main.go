@@ -204,8 +204,8 @@ func runDbMigrations(migrationUrl string, dbSource string) {
 	if err != nil {
 		log.Fatal("cannot create new migrate instance:", err)
 	}
-
-	if err = migration.Up(); err != nil {
+	// ignore the no change error which simply means that there are no new migrations to make
+	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatal("failed to  run migrate up:", err)
 	}
 
