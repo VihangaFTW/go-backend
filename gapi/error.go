@@ -36,3 +36,8 @@ func invalidArgumentError(violations []*errdetails.BadRequest_FieldViolation) er
 	// Client can parse badRequest details to show specific validation errors
 	return statusDetails.Err()
 }
+
+
+func unauthenticatedError(err error) error {
+	return status.Errorf(codes.Unauthenticated, "unauthorized: %s", err)
+}
