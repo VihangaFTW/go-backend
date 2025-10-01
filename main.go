@@ -73,6 +73,7 @@ func runGinServer(config util.Config, store db.Store) {
 
 func runGrpcServer(config util.Config, store db.Store) {
 	server, err := gapi.NewServer(config, store)
+	
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create gprc server")
 	}
@@ -142,7 +143,11 @@ func runGatewayServer(config util.Config, store db.Store) {
 
 	log.Info().Msgf("start http gateway at %s", listener.Addr().String())
 
-	err = http.Serve(listener, mux)
+	//? http logger middleware: wraps the multiplexer with the logger
+	handler := gapi.HttpLogger(mux)
+
+	err = http.Serve(listener, handler)
+	
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot start http gateway server")
 	}
@@ -150,6 +155,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 
 func runDbMigrations(migrationUrl string, dbSource string) {
 	migration, err := migrate.New(migrationUrl, dbSource)
+	
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create new migrate instance")
 	}
