@@ -14,6 +14,7 @@ jobs:
     env:
       DB_SOURCE: ${{ secrets.DB_SOURCE }}
       PASETO_SYMMETRIC_KEY: ${{ secrets.PASETO_SYMMETRIC_KEY }}
+      ENVIRONMENT: ${{secrets.ENVIRONMENT}}
 
     services:
       postgres:
