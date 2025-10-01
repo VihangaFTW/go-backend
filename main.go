@@ -4,9 +4,12 @@ import (
 	"context"
 	"database/sql"
 	"embed"
-	"log"
 	"net"
 	"net/http"
+	"os"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/VihangaFTW/Go-Backend/api"
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
@@ -26,188 +29,141 @@ import (
 	_ "github.com/lib/pq" // PostgreSQL driver import for side effects
 )
 
-// ! embedded variables should be package scoped
-//
 //go:embed doc/swagger/*
 var swaggerFS embed.FS
 
-// main is the entry point of the application.
-// It initializes the database connection and starts the gRPC server.
 func main() {
-	// Load configuration from environment variables and config files.
-	// This includes database connection details, server addresses, and other settings.
+
 	config, err := util.LoadConfig(".")
-	if err != nil {
-		log.Fatal("cannot load config:", err)
+
+	if config.Environment == "dev" {
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 	}
 
-	// Establish connection to the PostgreSQL database using the loaded configuration.
-	// The connection will be used by the store to execute database operations.
+	if err != nil {
+		log.Fatal().Err(err).Msg("cannot load config")
+	}
+
 	conn, err := sql.Open(config.DBDriver, config.DBSource)
 	if err != nil {
-		log.Fatal("cannot connect to db:", err)
+		log.Fatal().Err(err).Msg("cannot connect to db")
 	}
 
-	//* run db migrations
 	runDbMigrations(config.MigrationURL, config.DBSource)
 
-	// Create a new store instance that wraps the database connection.
-	// The store provides methods for database operations and transaction management.
 	store := db.NewStore(conn)
 
-	// Start the HTTP gateway server in a separate goroutine to run concurrently with gRPC.
-	// This allows both servers to run simultaneously on different ports.
 	go runGatewayServer(config, store)
-	// Start the gRPC server with the configured settings and database store.
 	runGrpcServer(config, store)
 }
 
 // runGinServer starts the HTTP REST API server using the Gin framework.
 // This function is currently not called but can be used as an alternative to gRPC.
-// Parameters:
-//   - config: Application configuration containing server settings
-//   - store: Database store for handling data operations
 func runGinServer(config util.Config, store db.Store) {
-	// Create a new HTTP server instance with the provided configuration and store.
 	server, err := api.NewServer(config, store)
 	if err != nil {
-		log.Fatal("cannot create server:", err)
+		log.Fatal().Err(err).Msg("cannot create server")
 	}
 
-	// Start the HTTP server on the configured address.
-	// This will block and serve HTTP requests until the server is stopped.
 	err = server.Start(config.HTTPServerAddress)
 	if err != nil {
-		log.Fatal("cannot start server:", err)
+		log.Fatal().Err(err).Msg("cannot start server")
 	}
 }
 
-// runGrpcServer starts the gRPC server for handling protocol buffer based API requests.
-// This server provides the same banking functionality as the HTTP API but uses gRPC protocol.
-// Parameters:
-//   - config: Application configuration containing server settings
-//   - store: Database store for handling data operations
 func runGrpcServer(config util.Config, store db.Store) {
-	// Create a new gRPC server instance with the provided configuration and store.
-	// This server implements the SimpleBankServer interface defined in protobuf.
 	server, err := gapi.NewServer(config, store)
+	
 	if err != nil {
-		log.Fatal("cannot create gprc server:", err)
+		log.Fatal().Err(err).Msg("cannot create gprc server")
 	}
 
-	// Create a new gRPC server instance with default options.
-	// This server will handle incoming gRPC requests and route them to appropriate handlers.
-	grpcServer := grpc.NewServer()
+	grpcLogger := grpc.UnaryInterceptor(gapi.GrpcLogger)
+	grpcServer := grpc.NewServer(grpcLogger)
 
-	// Register our SimpleBankServer implementation with the gRPC server.
-	// This makes our banking service methods available to gRPC clients.
 	pb.RegisterSimpleBankServer(grpcServer, server)
-
-	// Enable gRPC reflection for development and debugging.
-	// This allows tools like grpcurl to discover and call service methods.
 	reflection.Register(grpcServer)
 
-	// Create a TCP listener on the configured gRPC server address.
-	// This listener will accept incoming gRPC connections.
 	listener, err := net.Listen("tcp", config.GRPCServerAddress)
 	if err != nil {
-		log.Fatal("cannot create tcp listener for grpc server:", err)
+		log.Fatal().Err(err).Msg("cannot create tcp listener for grpc server")
 	}
 
-	// Log the server start message with the actual listening address.
-	log.Printf("start gRPC server at %s", listener.Addr().String())
+	log.Info().Msgf("start gRPC server at %s", listener.Addr().String())
 
-	// Start serving gRPC requests on the listener.
-	// This will block and handle incoming gRPC requests until the server is stopped.
 	err = grpcServer.Serve(listener)
 	if err != nil {
-		log.Fatal("cannot start grpc server:", err)
+		log.Fatal().Err(err).Msg("cannot start grpc server")
 	}
 }
 
-// runGatewayServer starts the HTTP gateway server.
-// It translates RESTful HTTP/JSON requests into gRPC requests and forwards them to the gRPC server.
-// This allows clients to interact with the gRPC service using a familiar REST API.
-// Parameters:
-//   - config: Application configuration containing server settings.
-//   - store: Database store for handling data operations.
+// runGatewayServer starts the HTTP gateway server that translates RESTful HTTP/JSON requests into gRPC requests.
 func runGatewayServer(config util.Config, store db.Store) {
-	// Create a new server instance, which implements the gRPC service handlers.
 	server, err := gapi.NewServer(config, store)
 	if err != nil {
-		log.Fatal("cannot create gRPC server:", err)
+		log.Fatal().Err(err).Msg("cannot create gRPC server")
 	}
 
 	jsonOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{
 		MarshalOptions: protojson.MarshalOptions{
-			UseProtoNames: true, // Use original protobuf field names instead of camelCase.
+			UseProtoNames: true,
 		},
 		UnmarshalOptions: protojson.UnmarshalOptions{
-			DiscardUnknown: true, // Ignore unknown fields in incoming JSON to prevent errors.
+			DiscardUnknown: true,
 		},
 	})
 
-	// Create a new gRPC-gateway mux for routing HTTP requests to gRPC handlers.
-	grpcMux := runtime.NewServeMux(
-		jsonOption,
-	)
+	grpcMux := runtime.NewServeMux(jsonOption)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	// Register the gRPC server handlers with the gRPC-gateway mux.
-	// This connects the protobuf-defined HTTP endpoints to the gRPC service implementation.
-	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
 
+	err = pb.RegisterSimpleBankHandlerServer(ctx, grpcMux, server)
 	if err != nil {
-		log.Fatal("cannot register handler server:", err)
+		log.Fatal().Err(err).Msg("cannot register handler server")
 	}
 
-	// Create a standard HTTP mux and mount the gRPC-gateway mux on it.
-	// All incoming requests to the root path "/" will be handled by the gRPC gateway.
 	mux := http.NewServeMux()
 	mux.Handle("/", grpcMux)
 
-	// Create a file server to serve Swagger UI static files from the embedded file system.
-	// Use fs.Sub to create a sub-filesystem that points directly to the swagger files,
-	// removing the "doc/swagger" prefix so files can be accessed at their expected paths.
+	// Use fs.Sub to remove the "doc/swagger" prefix from embedded files.
 	swaggerSubFS, err := fs.Sub(swaggerFS, "doc/swagger")
 	if err != nil {
-		log.Fatal("cannot create swagger sub filesystem:", err)
+		log.Fatal().Err(err).Msg("cannot create swagger sub filesystem")
 	}
 	fileServer := http.FileServerFS(swaggerSubFS)
 
-	// Handle all requests to "/swagger/" by stripping the prefix and passing them to the file server.
-	// This is necessary because the file server expects file paths relative to its root directory ("./doc/swagger"),
-	// but the HTTP requests include the "/swagger/" prefix. http.StripPrefix removes this prefix,
-	// allowing the file server to find the correct files (e.g., a request for "/swagger/index.html"
-	// becomes a lookup for "index.html" in the "./doc/swagger" directory).
+	// StripPrefix is needed so the file server can find files relative to its root.
 	mux.Handle("/swagger/", http.StripPrefix("/swagger/", fileServer))
 
-	// Create a TCP listener for the HTTP gateway server on the configured address.
 	listener, err := net.Listen("tcp", config.HTTPServerAddress)
 	if err != nil {
-		log.Fatal("cannot create tcp listener for http gateway server:", err)
+		log.Fatal().Err(err).Msg("cannot create tcp listener for http gateway server")
 	}
 
-	// Log the server start message with the actual listening address.
-	log.Printf("start http gateway at %s", listener.Addr().String())
+	log.Info().Msgf("start http gateway at %s", listener.Addr().String())
 
-	// Start the HTTP server to serve requests on the listener.
-	err = http.Serve(listener, mux)
+	//? http logger middleware: wraps the multiplexer with the logger
+	handler := gapi.HttpLogger(mux)
+
+	err = http.Serve(listener, handler)
+	
 	if err != nil {
-		log.Fatal("cannot start http gateway server:", err)
+		log.Fatal().Err(err).Msg("cannot start http gateway server")
 	}
 }
 
 func runDbMigrations(migrationUrl string, dbSource string) {
 	migration, err := migrate.New(migrationUrl, dbSource)
+	
 	if err != nil {
-		log.Fatal("cannot create new migrate instance:", err)
-	}
-	// ignore the no change error which simply means that there are no new migrations to make
-	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
-		log.Fatal("failed to  run migrate up:", err)
+		log.Fatal().Err(err).Msg("cannot create new migrate instance")
 	}
 
-	log.Println("db migration success!")
+	// Ignore ErrNoChange which means there are no new migrations to run.
+	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
+		log.Fatal().Err(err).Msg("failed to  run migrate up")
+	}
+
+	log.Info().Msgf("db migration success!")
 }

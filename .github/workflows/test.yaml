@@ -14,6 +14,7 @@ jobs:
     env:
       DB_SOURCE: ${{ secrets.DB_SOURCE }}
       PASETO_SYMMETRIC_KEY: ${{ secrets.PASETO_SYMMETRIC_KEY }}
+      ENVIRONMENT: ${{secrets.ENVIRONMENT}}
 
     services:
       postgres:
@@ -45,6 +46,7 @@ jobs:
           cp app.env.template app.env
           sed -i 's|${DB_SOURCE}|${{ secrets.DB_SOURCE }}|g' app.env
           sed -i 's|${PASETO_SYMMETRIC_KEY}|${{ secrets.PASETO_SYMMETRIC_KEY}}|g' app.env
+          sed -i 's|$ENVIRONMENT|${{ secrets.ENVIRONMENT }}|g' app.env
 
       - name: Install golang-migrate CLI
         run: |

@@ -15,7 +15,7 @@ type MetaData struct {
 const (
 	grpcGatewayUserAgentHeader = "grpcgateway-user-agent"
 	userAgentHeader            = "user-agent"
-	xForwaredForHeader         = "x-forwarded-host"
+	xForwardedForHeader         = "x-forwarded-host"
 )
 
 func (server *Server) extractMetadata(ctx context.Context) *MetaData {
@@ -34,7 +34,7 @@ func (server *Server) extractMetadata(ctx context.Context) *MetaData {
 		}
 
 		// Extract client IP from x-forwarded-for header.
-		if clientIps := md.Get(xForwaredForHeader); len(clientIps) > 0 {
+		if clientIps := md.Get(xForwardedForHeader); len(clientIps) > 0 {
 			mtdt.ClientIp = clientIps[0]
 		}
 	}
