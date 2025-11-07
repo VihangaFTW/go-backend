@@ -159,7 +159,7 @@ func runDbMigrations(migrationUrl string, dbSource string) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create new migrate instance")
 	}
-
+	
 	// Ignore ErrNoChange which means there are no new migrations to run.
 	if err = migration.Up(); err != nil && err != migrate.ErrNoChange {
 		log.Fatal().Err(err).Msg("failed to  run migrate up")
