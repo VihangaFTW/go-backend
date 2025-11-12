@@ -39,6 +39,8 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 			FullName:       req.GetFullName(),
 			Email:          req.GetEmail(),
 		},
+		// Post-creation hook: schedule verify email task within the same transaction.
+		// If task scheduling fails, user creation is rolled back.
 		AfterCreateUser: func(user db.User) error {
 
 			taskPayload := &worker.PayloadSendVerifyEmail{
@@ -56,7 +58,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		},
 	}
 
-	// store the new txResult in the db and run post creation hook
+	// Execute user creation and email verification task scheduling atomically within a single transaction.
 	txResult, err := server.store.CreateUserTx(ctx, arg)
 
 	if err != nil {
