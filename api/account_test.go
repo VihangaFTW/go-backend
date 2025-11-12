@@ -13,7 +13,7 @@ import (
 
 	mockdb "github.com/VihangaFTW/Go-Backend/db/mock"
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
-	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/util"
 	"github.com/VihangaFTW/Go-Backend/token"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"

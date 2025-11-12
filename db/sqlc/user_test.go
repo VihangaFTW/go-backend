@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/util"
 	"github.com/stretchr/testify/require"
 )
 

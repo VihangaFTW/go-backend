@@ -2,14 +2,21 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
 	"github.com/hibiken/asynq"
 )
 
+const (
+	QueueCritical = "critical"
+	QueueDefault  = "default"
+)
+
 type TaskProcessor interface {
 	Start() error
-	ProcessTaskSendVerifyEmail(ctx context.Context, task *asynq.Task) error
+	ProcessTaskSendVerifyEmail(ctx context.Context, payload *PayloadSendVerifyEmail) error
 }
 
 type RedisTaskProcessor struct {
@@ -20,7 +27,12 @@ type RedisTaskProcessor struct {
 func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) TaskProcessor {
 	server := asynq.NewServer(
 		redisOpt,
-		asynq.Config{},
+		asynq.Config{
+			Queues: map[string]int{
+				QueueCritical: 10,
+				QueueDefault:  5,
+			},
+		},
 	)
 
 	return &RedisTaskProcessor{
@@ -32,8 +44,15 @@ func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) TaskPr
 func (processor *RedisTaskProcessor) Start() error {
 	mux := asynq.NewServeMux()
 
-	mux.HandleFunc(TaskSendVerifyEmail, processor.ProcessTaskSendVerifyEmail)
+	// Wrap the email verify handler with asynq unmarshaling
+	mux.HandleFunc(TaskSendVerifyEmail, func(ctx context.Context, task *asynq.Task) error {
+		var payload PayloadSendVerifyEmail
+
+		if err := json.Unmarshal(task.Payload(), &payload); err != nil {
+			return fmt.Errorf("failed to unmarshal payload: %w: %w", err, asynq.SkipRetry)
+		}
+		return processor.ProcessTaskSendVerifyEmail(ctx, &payload)
+	})
 
 	return processor.server.Start(mux)
-
 }

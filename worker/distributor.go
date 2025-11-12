@@ -11,14 +11,12 @@ type TaskDistributor interface {
 		ctx context.Context,
 		payload *PayloadSendVerifyEmail,
 		opts ...asynq.Option,
-
 	) error
 }
 
 type RedisTaskDistributor struct {
 	client *asynq.Client
 }
-
 
 func NewRedisTaskDistributor(redisOpt asynq.RedisClientOpt) TaskDistributor {
 	client := asynq.NewClient(redisOpt)

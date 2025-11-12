@@ -6,8 +6,8 @@ import (
 	"time"
 
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
-	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/VihangaFTW/Go-Backend/token"
+	"github.com/VihangaFTW/Go-Backend/util"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
