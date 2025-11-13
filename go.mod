@@ -12,6 +12,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.27.2
 	github.com/hibiken/asynq v0.25.1
 	github.com/lib/pq v1.10.9
+	github.com/redis/go-redis/v9 v9.14.0
 	github.com/rs/zerolog v1.34.0
 	github.com/spf13/viper v1.21.0
 	go.uber.org/mock v0.6.0
@@ -50,7 +51,6 @@ require (
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/quic-go/qpack v0.5.1 // indirect
 	github.com/quic-go/quic-go v0.54.1 // indirect
-	github.com/redis/go-redis/v9 v9.14.0 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/sagikazarmark/locafero v0.12.0 // indirect
 	github.com/spf13/afero v1.15.0 // indirect
@@ -75,6 +75,7 @@ require (
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/testify v1.11.1
+	github.com/wneessen/go-mail v0.7.2
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
