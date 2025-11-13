@@ -1,7 +1,7 @@
 package api
 
 import (
-	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/util"
 	"github.com/go-playground/validator/v10"
 )
 

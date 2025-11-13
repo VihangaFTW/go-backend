@@ -2,11 +2,14 @@ package gapi
 
 import (
 	"context"
+	"time"
 
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
-	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/VihangaFTW/Go-Backend/pb"
 	validator "github.com/VihangaFTW/Go-Backend/rpc_validator"
+	"github.com/VihangaFTW/Go-Backend/util"
+	"github.com/VihangaFTW/Go-Backend/worker"
+	"github.com/hibiken/asynq"
 	"github.com/lib/pq"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
@@ -29,17 +32,34 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 		return nil, status.Errorf(codes.Internal, "failed to hash password: %s", err)
 	}
 
-	// create the input struct
+	arg := db.CreateUserTxParams{
+		CreateUserParams: db.CreateUserParams{
+			Username:       req.GetUsername(),
+			HashedPassword: hashedPassword,
+			FullName:       req.GetFullName(),
+			Email:          req.GetEmail(),
+		},
+		// Post-creation hook: schedule verify email task within the same transaction.
+		// If task scheduling fails, user creation is rolled back.
+		AfterCreateUser: func(user db.User) error {
 
-	arg := db.CreateUserParams{
-		Username:       req.GetUsername(),
-		HashedPassword: hashedPassword,
-		FullName:       req.GetFullName(),
-		Email:          req.GetEmail(),
+			taskPayload := &worker.PayloadSendVerifyEmail{
+				Username: user.Username,
+			}
+
+			opts := []asynq.Option{
+				asynq.MaxRetry(10),
+				asynq.ProcessIn(10 * time.Second),
+				asynq.Queue(worker.QueueCritical),
+			}
+
+			return server.taskDistributor.DistributeTaskSendVerifyEmail(ctx, taskPayload, opts...)
+
+		},
 	}
 
-	// store the new user in the db
-	user, err := server.store.CreateUser(ctx, arg)
+	// Execute user creation and email verification task scheduling atomically within a single transaction.
+	txResult, err := server.store.CreateUserTx(ctx, arg)
 
 	if err != nil {
 		// user already exists
@@ -54,7 +74,7 @@ func (server *Server) CreateUser(ctx context.Context, req *pb.CreateUserRequest)
 	}
 
 	response := &pb.CreateUserResponse{
-		User: convertUser(user),
+		User: convertUser(txResult.User),
 	}
 
 	return response, nil

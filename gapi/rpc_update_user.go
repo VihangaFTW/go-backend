@@ -6,7 +6,7 @@ import (
 	"time"
 
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
-	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/util"
 	"github.com/VihangaFTW/Go-Backend/pb"
 	validator "github.com/VihangaFTW/Go-Backend/rpc_validator"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"

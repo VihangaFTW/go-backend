@@ -50,4 +50,7 @@ proto:
 evans:
 	evans --host localhost --port 9090 -r repl
 
-.PHONY: createdb startdb dropdb migrateup migratedown migratedown1 sqlc test psql server mock aws-ecr-login db_docs db_schema proto evans
+redis:
+	docker run --name redis -p 6379:6379 -d redis:8.2-alpine 
+
+.PHONY: createdb startdb dropdb migrateup migratedown migratedown1 sqlc test psql server mock aws-ecr-login db_docs db_schema proto evans redis

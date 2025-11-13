@@ -7,7 +7,7 @@ import (
 	"time"
 
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
-	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/util"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/lib/pq"

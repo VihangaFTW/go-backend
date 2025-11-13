@@ -6,7 +6,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/VihangaFTW/Go-Backend/db/util"
+	"github.com/VihangaFTW/Go-Backend/util"
 	_ "github.com/lib/pq"
 )
 

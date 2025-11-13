@@ -8,14 +8,16 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/hibiken/asynq"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
 	"github.com/VihangaFTW/Go-Backend/api"
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
-	"github.com/VihangaFTW/Go-Backend/db/util"
 	"github.com/VihangaFTW/Go-Backend/gapi"
 	"github.com/VihangaFTW/Go-Backend/pb"
+	"github.com/VihangaFTW/Go-Backend/util"
+	"github.com/VihangaFTW/Go-Backend/worker"
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -53,8 +55,18 @@ func main() {
 
 	store := db.NewStore(conn)
 
-	go runGatewayServer(config, store)
-	runGrpcServer(config, store)
+	//* task scheduler
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+
+	//* run task processor (blocking server)
+	go runRedisTaskProcessor(redisOpt, store)
+
+	go runGatewayServer(config, store, taskDistributor)
+	runGrpcServer(config, store, taskDistributor)
 }
 
 // runGinServer starts the HTTP REST API server using the Gin framework.
@@ -71,9 +83,9 @@ func runGinServer(config util.Config, store db.Store) {
 	}
 }
 
-func runGrpcServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
-	
+func runGrpcServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
+
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create gprc server")
 	}
@@ -98,8 +110,8 @@ func runGrpcServer(config util.Config, store db.Store) {
 }
 
 // runGatewayServer starts the HTTP gateway server that translates RESTful HTTP/JSON requests into gRPC requests.
-func runGatewayServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runGatewayServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create gRPC server")
 	}
@@ -147,7 +159,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 	handler := gapi.HttpLogger(mux)
 
 	err = http.Serve(listener, handler)
-	
+
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot start http gateway server")
 	}
@@ -155,7 +167,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 
 func runDbMigrations(migrationUrl string, dbSource string) {
 	migration, err := migrate.New(migrationUrl, dbSource)
-	
+
 	if err != nil {
 		log.Fatal().Err(err).Msg("cannot create new migrate instance")
 	}
@@ -166,4 +178,16 @@ func runDbMigrations(migrationUrl string, dbSource string) {
 	}
 
 	log.Info().Msgf("db migration success!")
+}
+
+func runRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
+	redisProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+
+	log.Info().Msg("start redis task processor")
+
+	err := redisProcessor.Start()
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start redis task processor")
+	}
 }
