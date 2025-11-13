@@ -17,6 +17,7 @@ jobs:
       ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
       EMAIL_SENDER_ADDRESS: ${{ secrets.EMAIL_SENDER_ADDRESS }}
       EMAIL_SENDER_PASSWORD: ${{ secrets.EMAIL_SENDER_PASSWORD }}
+      EMAIL_TEST_RECIPIENT: ${{ secrets.EMAIL_TEST_RECIPIENT }}
 
     services:
       postgres:
@@ -60,6 +61,7 @@ jobs:
           sed -i 's|$ENVIRONMENT|${{ secrets.ENVIRONMENT }}|g' app.env
           sed -i 's|$EMAIL_SENDER_ADDRESS|${{ secrets.EMAIL_SENDER_ADDRESS }}|g' app.env
           sed -i 's|$EMAIL_SENDER_PASSWORD|${{ secrets.EMAIL_SENDER_PASSWORD }}|g' app.env
+          sed -i 's|$EMAIL_TEST_RECIPIENT|${{ secrets.EMAIL_TEST_RECIPIENT }}|g' app.env
 
       - name: Install golang-migrate CLI
         run: |

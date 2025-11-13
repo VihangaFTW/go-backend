@@ -90,12 +90,16 @@ func (sender *GmailSender) SendEmail(
 		log.Error().
 			Err(err).
 			Msg("failed to create mail client")
+
+		return err
 	}
 
 	if err := client.DialAndSend(message); err != nil {
 		log.Error().
 			Err(err).
 			Msg("failed to send message")
+
+		return err
 
 	}
 
