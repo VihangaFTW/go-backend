@@ -63,7 +63,7 @@ func (processor *RedisTaskProcessor) Start() error {
 		var payload PayloadSendVerifyEmail
 
 		if err := json.Unmarshal(task.Payload(), &payload); err != nil {
-			return fmt.Errorf("failed to unmarshal payload: %w: %w", err, asynq.SkipRetry)
+			return fmt.Errorf("failed to unmarshal payload: %w", fmt.Errorf("%w: %v", asynq.SkipRetry, err))
 		}
 		return processor.ProcessTaskSendVerifyEmail(ctx, &payload)
 	})
