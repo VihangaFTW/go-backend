@@ -1,3 +1,10 @@
 {
-  "makefile.configureOnOpen": true
+  "makefile.configureOnOpen": true,
+  "protoc": {
+    "path": [
+      "/home/vihanga/Documents/GO Backend/proto",
+      "/home/vihanga/Documents/GO Backend/proto/google",
+      "/home/vihanga/Documents/GO Backend/proto/protoc-gen-openapiv2"
+    ]
+  }
 }

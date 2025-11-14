@@ -6,3 +6,20 @@ INSERT INTO verify_emails (
 ) VALUES (
     $1, $2, $3
 ) RETURNING *;
+
+
+-- name: UpdateVerifyEmail :one
+UPDATE verify_emails
+SET 
+    is_used = TRUE
+WHERE
+    id = sqlc.arg(id)
+    AND
+    secret_code = sqlc.arg(secret_code)
+    AND
+    is_used = FALSE
+    AND
+    expired_at > now()
+RETURNING *;d
+
+
