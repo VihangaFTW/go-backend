@@ -15,6 +15,7 @@ import (
 	"github.com/VihangaFTW/Go-Backend/api"
 	db "github.com/VihangaFTW/Go-Backend/db/sqlc"
 	"github.com/VihangaFTW/Go-Backend/gapi"
+	"github.com/VihangaFTW/Go-Backend/mail"
 	"github.com/VihangaFTW/Go-Backend/pb"
 	"github.com/VihangaFTW/Go-Backend/util"
 	"github.com/VihangaFTW/Go-Backend/worker"
@@ -63,7 +64,7 @@ func main() {
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
 
 	//* run task processor (blocking server)
-	go runRedisTaskProcessor(redisOpt, store)
+	go runRedisTaskProcessor(config, redisOpt, store)
 
 	go runGatewayServer(config, store, taskDistributor)
 	runGrpcServer(config, store, taskDistributor)
@@ -180,8 +181,11 @@ func runDbMigrations(migrationUrl string, dbSource string) {
 	log.Info().Msgf("db migration success!")
 }
 
-func runRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
-	redisProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+func runRedisTaskProcessor(config util.Config, redisOpt asynq.RedisClientOpt, store db.Store) {
+
+	mailer := mail.NewGmailSender(config.EmailSenderName, config.EmailSenderAddress, config.EmailSenderPassword)
+
+	redisProcessor := worker.NewRedisTaskProcessor(redisOpt, store, mailer)
 
 	log.Info().Msg("start redis task processor")
 

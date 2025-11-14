@@ -1,13 +1,13 @@
 DB_URL = postgres://root:12345@localhost:5432/simple_bank?sslmode=disable
 
 startdb:
-	docker run --name postgres  -e POSTGRES_USER=root -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d postgres:latest
+	docker run --name go-backend-postgres-1  -e POSTGRES_USER=root -e POSTGRES_PASSWORD=12345 -p 5432:5432 -d postgres:latest
 
 createdb:
-	docker exec -it postgres createdb --username=root --owner=root simple_bank
+	docker exec -it go-backend-postgres-1 createdb --username=root --owner=root simple_bank
 
 dropdb:
-	docker exec -it postgres dropdb simple_bank
+	docker exec -it go-backend-postgres-1 dropdb simple_bank
 
 migrateup:
 	migrate -path db/migration -database "$(DB_URL)" -verbose up 
@@ -17,6 +17,12 @@ migratedown:
 	
 migratedown1:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
+
+force_version:
+	migrate -path db/migration -database "$(DB_URL)" force $(VERSION)
+
+new_migration:
+	migrate create -ext sql -dir db/migration -seq $(MIGRATION_NAME)
 
 sqlc:
 	sqlc generate
@@ -53,4 +59,4 @@ evans:
 redis:
 	docker run --name redis -p 6379:6379 -d redis:8.2-alpine 
 
-.PHONY: createdb startdb dropdb migrateup migratedown migratedown1 sqlc test psql server mock aws-ecr-login db_docs db_schema proto evans redis
+.PHONY: createdb startdb dropdb migrateup migratedown migratedown1 force_version sqlc test psql server mock aws-ecr-login db_docs db_schema proto evans redis new_migration

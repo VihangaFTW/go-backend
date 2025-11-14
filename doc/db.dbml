@@ -6,15 +6,26 @@ Project SimpleBank {
   '''
 }
 
-Table users {
+Table users as U {
   username varchar [pk, note: 'Primary key - unique username']
   hashed_password varchar [not null, note: 'Bcrypt hashed password']
   full_name varchar [not null, note: 'User full name']
   email varchar [not null, unique, note: 'User email address']
+  is_email_verified bool [not null, default: false, note: 'has the user email been verified?']
   created_at timestamptz [not null, default: `now()`, note: 'Account creation timestamp']
   password_changed_at timestamptz [not null, default: '0001-01-01 00:00:00Z', note: 'Last password change timestamp']
 
   Note: 'User accounts with authentication information'
+}
+
+Table verify_emails {
+  id bigserial [pk]
+  username varchar [ref: > U.username, not null]
+  email varchar [not null]
+  secret_code varchar [not null]
+  is_used bool [not null, default: false]
+  created_at timestamptz [not null, default: `now()` ]
+  expired_at timestamptz [not null, default: `now() + interval '15 minutes'`]
 }
 
 Table accounts {

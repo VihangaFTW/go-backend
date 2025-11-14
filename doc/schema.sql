@@ -1,14 +1,25 @@
 -- SQL dump generated using DBML (dbml.dbdiagram.io)
 -- Database: PostgreSQL
--- Generated at: 2025-07-05T10:23:49.006Z
+-- Generated at: 2025-11-14T07:08:34.455Z
 
 CREATE TABLE "users" (
   "username" varchar PRIMARY KEY,
   "hashed_password" varchar NOT NULL,
   "full_name" varchar NOT NULL,
   "email" varchar UNIQUE NOT NULL,
+  "is_email_verified" bool NOT NULL DEFAULT false,
   "created_at" timestamptz NOT NULL DEFAULT (now()),
   "password_changed_at" timestamptz NOT NULL DEFAULT '0001-01-01 00:00:00Z'
+);
+
+CREATE TABLE "verify_emails" (
+  "id" bigserial PRIMARY KEY,
+  "username" varchar NOT NULL,
+  "email" varchar NOT NULL,
+  "secret_code" varchar NOT NULL,
+  "is_used" bool NOT NULL DEFAULT false,
+  "created_at" timestamptz NOT NULL DEFAULT (now()),
+  "expired_at" timestamptz NOT NULL DEFAULT (now() + interval '15 minutes')
 );
 
 CREATE TABLE "accounts" (
@@ -66,6 +77,8 @@ COMMENT ON COLUMN "users"."full_name" IS 'User full name';
 
 COMMENT ON COLUMN "users"."email" IS 'User email address';
 
+COMMENT ON COLUMN "users"."is_email_verified" IS 'has the user email been verified?';
+
 COMMENT ON COLUMN "users"."created_at" IS 'Account creation timestamp';
 
 COMMENT ON COLUMN "users"."password_changed_at" IS 'Last password change timestamp';
@@ -119,6 +132,8 @@ COMMENT ON COLUMN "sessions"."is_blocked" IS 'Session blocked status';
 COMMENT ON COLUMN "sessions"."expires_at" IS 'Session expiration time';
 
 COMMENT ON COLUMN "sessions"."created_at" IS 'Session creation time';
+
+ALTER TABLE "verify_emails" ADD FOREIGN KEY ("username") REFERENCES "users" ("username");
 
 ALTER TABLE "accounts" ADD FOREIGN KEY ("owner") REFERENCES "users" ("username");
 
